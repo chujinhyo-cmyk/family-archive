@@ -2,13 +2,12 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
   <title>우리 가족 추억보관소</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- 캐시 없이 항상 최신 데이터 로드 -->
   <script>
     document.write('<script src="data.js?v=' + Date.now() + '"><\/script>');
   </script>
@@ -18,6 +17,7 @@
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     .slider-touch::-webkit-scrollbar { height: 4px; }
     .slider-touch::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    .touch-pan { touch-action: pan-y pinch-zoom; }
   </style>
 </head>
 <body class="bg-[#FDFBF7] text-stone-800 antialiased selection:bg-amber-100 min-h-screen">
@@ -54,7 +54,6 @@
 
   <!-- 메인 웹페이지 영역 -->
   <div id="main-app" class="hidden">
-    <!-- 상단 헤더 -->
     <header class="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200/80 bg-[#FDFBF7]/90 px-4 py-3 backdrop-blur-md md:px-8">
       <div>
         <h1 class="text-xl font-bold tracking-tight text-stone-900 md:text-2xl font-serif">
@@ -63,7 +62,6 @@
         <p class="text-xs text-stone-500 hidden sm:block">함께 걸어온 소중한 시간과 이야기</p>
       </div>
 
-      <!-- 모드 전환 버튼 -->
       <div class="flex rounded-full bg-stone-200/80 p-1 text-xs md:text-sm font-medium">
         <button id="btn-timeline" onclick="switchView('timeline')" class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 bg-white text-stone-900 shadow-sm transition">
           <i data-lucide="clock" class="w-4 h-4"></i>
@@ -77,8 +75,7 @@
     </header>
 
     <main class="mx-auto max-w-5xl px-4 py-6 md:px-8">
-      
-      <!-- 1. 타임라인 뷰 (원래의 감성적인 메인 대문) -->
+      <!-- 1. 타임라인 뷰 -->
       <section id="timeline-view" class="flex flex-col md:flex-row gap-6 md:gap-8">
         <aside id="year-nav" class="sticky top-16 z-10 flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 md:w-28 flex-shrink-0 bg-[#FDFBF7]/90 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
           <span class="text-xs font-semibold uppercase text-stone-400 hidden md:block mb-1">탐색</span>
@@ -107,22 +104,23 @@
           </div>
         </div>
       </section>
-
     </main>
   </div>
 
-  <!-- 3. 넷플릭스/OTT 시네마틱 상세 뷰어 (카드 클릭 시 열림) -->
+  <!-- 3. 넷플릭스/OTT 상세 뷰어 -->
   <div id="netflix-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-0 md:p-6 backdrop-blur-md hidden animate-fadeIn">
-    <!-- 닫기 버튼 -->
     <button onclick="closeNetflixModal()" class="absolute top-4 right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition active:scale-90">
       <i data-lucide="x" class="w-6 h-6"></i>
     </button>
 
-    <!-- 모달 본체: 넷플릭스 와이드 스타일 -->
     <div class="relative h-full w-full max-w-5xl overflow-y-auto bg-[#141414] text-white rounded-none md:rounded-3xl shadow-2xl flex flex-col">
-      <!-- 상단 메인 시네마틱 와이드 뷰어 -->
-      <div class="relative aspect-video w-full bg-black flex items-center justify-center">
-        <div id="modal-player-wrap" class="w-full h-full flex items-center justify-center"></div>
+      <!-- 상단 메인 시네마틱 뷰어 (모바일에서 더 큼직하게 45vh 이상 확보) -->
+      <div class="relative w-full h-[45vh] md:h-[58vh] bg-black flex items-center justify-center overflow-hidden">
+        <div id="modal-player-wrap" class="w-full h-full flex items-center justify-center cursor-zoom-in"></div>
+        <div class="absolute bottom-2 right-3 pointer-events-none bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] text-stone-300 flex items-center gap-1">
+          <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+          <span>터치 시 전체화면 확대</span>
+        </div>
       </div>
 
       <!-- 콘텐츠 상세 설명 & 하단 와이드 가로 슬라이더 -->
@@ -133,7 +131,6 @@
           <p id="modal-desc" class="mt-2 text-stone-300 text-xs md:text-sm leading-relaxed max-w-3xl"></p>
         </div>
 
-        <!-- 하단 넷플릭스형 썸네일 바 (스마트폰에서도 시원하게 가로 스와이프) -->
         <div class="pt-2">
           <h4 id="modal-slider-count" class="text-xs md:text-sm font-bold text-stone-400 mb-3">모아보기</h4>
           <div id="modal-thumbnails" class="flex gap-3 md:gap-4 overflow-x-auto pb-4 slider-touch"></div>
@@ -142,12 +139,41 @@
     </div>
   </div>
 
+  <!-- 4. 전체화면 핀치 줌 / 딥 뷰어 (상단 사진 터치 시 실행) -->
+  <div id="fullscreen-lightbox" class="fixed inset-0 z-50 bg-black flex flex-col justify-between hidden">
+    <!-- 상단 툴바 -->
+    <div class="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent z-10">
+      <span id="lightbox-counter" class="text-xs font-medium text-stone-300"></span>
+      <div class="flex items-center gap-2">
+        <button onclick="zoomReset()" class="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 text-xs px-3">100%</button>
+        <button onclick="closeLightbox()" class="p-2 rounded-full bg-white/20 text-white hover:bg-white/30">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 중앙 인터랙티브 줌 이미지 영역 -->
+    <div id="lightbox-viewport" class="relative flex-1 flex items-center justify-center overflow-hidden touch-pan">
+      <img id="lightbox-img" class="max-w-full max-h-full object-contain transition-transform duration-100 ease-out select-none" style="transform-origin: center center;" />
+    </div>
+
+    <!-- 하단 안내 -->
+    <div class="p-3 text-center text-[11px] text-stone-400 bg-gradient-to-t from-black/80 to-transparent">
+      두 손가락으로 확대/축소하거나 더블 탭하세요
+    </div>
+  </div>
+
   <script>
     const FAMILY_PIN = "1234";
 
     let activePost = null;
+    let currentMedia = null;
     let leafletMap = null;
     let markersLayer = null;
+
+    // 핀치 줌 관련 변수
+    let scale = 1;
+    let lastDistance = null;
 
     function verifyPin(e) {
       e.preventDefault();
@@ -181,6 +207,7 @@
       }
       renderTimeline();
       initMap();
+      setupZoomTouch();
       lucide.createIcons();
     }
 
@@ -257,7 +284,6 @@
       post.mediaList.forEach(m => {
         const item = document.createElement('div');
         item.className = "relative flex-shrink-0 cursor-pointer overflow-hidden rounded-xl transition transform duration-200 hover:scale-105 active:scale-95 ring-1 ring-white/10 shadow-lg";
-        // 모바일에서도 보기 편한 큼직한 비율
         item.style.width = "170px";
         item.style.height = "105px";
         item.onclick = (e) => { e.stopPropagation(); renderActiveMedia(m); };
@@ -275,17 +301,79 @@
     }
 
     function renderActiveMedia(media) {
+      currentMedia = media;
       const wrap = document.getElementById('modal-player-wrap');
       if (media.type === 'video') {
+        wrap.onclick = null;
         wrap.innerHTML = `<iframe src="${media.url}" class="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
       } else {
-        wrap.innerHTML = `<img src="${media.url}" class="max-h-full max-w-full object-contain">`;
+        wrap.onclick = () => openLightbox(media);
+        wrap.innerHTML = `<img src="${media.url}" class="max-h-full max-w-full object-contain pointer-events-none">`;
       }
     }
 
     function closeNetflixModal() {
       document.getElementById('netflix-modal').classList.add('hidden');
       document.getElementById('modal-player-wrap').innerHTML = '';
+    }
+
+    // 4. 전체화면 핀치 줌 라이트박스 로직
+    function openLightbox(media) {
+      if (!media || media.type === 'video') return;
+      scale = 1;
+      const lb = document.getElementById('fullscreen-lightbox');
+      const img = document.getElementById('lightbox-img');
+      img.src = media.url;
+      img.style.transform = `scale(1)`;
+      document.getElementById('lightbox-counter').innerText = media.name || '가족 사진';
+      lb.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeLightbox() {
+      document.getElementById('fullscreen-lightbox').classList.add('hidden');
+      scale = 1;
+    }
+
+    function zoomReset() {
+      scale = 1;
+      document.getElementById('lightbox-img').style.transform = `scale(1)`;
+    }
+
+    function setupZoomTouch() {
+      const viewport = document.getElementById('lightbox-viewport');
+      const img = document.getElementById('lightbox-img');
+
+      // 더블 탭 확대
+      let lastTap = 0;
+      viewport.addEventListener('touchend', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
+          scale = scale > 1 ? 1 : 2.2;
+          img.style.transform = `scale(${scale})`;
+          e.preventDefault();
+        }
+        lastTap = currentTime;
+      });
+
+      // 멀티 터치 핀치 줌
+      viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+          const dist = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+          );
+          if (lastDistance) {
+            const diff = dist - lastDistance;
+            scale = Math.min(Math.max(1, scale + diff * 0.008), 4);
+            img.style.transform = `scale(${scale})`;
+          }
+          lastDistance = dist;
+        }
+      });
+
+      viewport.addEventListener('touchend', () => { lastDistance = null; });
     }
 
     function switchView(mode) {
