@@ -8,17 +8,21 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="data.js"></script>
+  <!-- 캐시 없이 항상 최신 데이터 로드 -->
+  <script>
+    document.write('<script src="data.js?v=' + Date.now() + '"><\/script>');
+  </script>
   <style>
     ::-webkit-scrollbar { height: 6px; width: 6px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    .no-select { -webkit-tap-highlight-color: transparent; user-select: none; }
+    .slider-touch::-webkit-scrollbar { height: 4px; }
+    .slider-touch::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
   </style>
 </head>
 <body class="bg-[#FDFBF7] text-stone-800 antialiased selection:bg-amber-100 min-h-screen">
 
-  <!-- 가족 전용 로그인/PIN 잠금 게이트웨이 -->
+  <!-- 가족 전용 PIN 인증 게이트웨이 -->
   <div id="pin-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFBF7] px-4">
     <div class="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-xl border border-stone-200">
       <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 mb-4 shadow-sm">
@@ -33,7 +37,6 @@
           id="pin-input" 
           maxlength="8" 
           inputmode="numeric" 
-          pattern="[0-9]*" 
           placeholder="PIN 번호 입력" 
           class="w-full tracking-widest text-center text-xl font-bold py-3 px-4 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
           autofocus
@@ -49,17 +52,18 @@
     </div>
   </div>
 
-  <!-- 메인 플랫폼 컨테이너 (인증 후 노출) -->
+  <!-- 메인 웹페이지 영역 -->
   <div id="main-app" class="hidden">
     <!-- 상단 헤더 -->
     <header class="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200/80 bg-[#FDFBF7]/90 px-4 py-3 backdrop-blur-md md:px-8">
       <div>
-        <h1 class="text-lg md:text-2xl font-bold tracking-tight text-stone-900 font-serif">
+        <h1 class="text-xl font-bold tracking-tight text-stone-900 md:text-2xl font-serif">
           우리 가족 추억보관소
         </h1>
-        <p class="text-[11px] md:text-xs text-stone-500 hidden sm:block">함께 걸어온 소중한 시간과 이야기</p>
+        <p class="text-xs text-stone-500 hidden sm:block">함께 걸어온 소중한 시간과 이야기</p>
       </div>
 
+      <!-- 모드 전환 버튼 -->
       <div class="flex rounded-full bg-stone-200/80 p-1 text-xs md:text-sm font-medium">
         <button id="btn-timeline" onclick="switchView('timeline')" class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 bg-white text-stone-900 shadow-sm transition">
           <i data-lucide="clock" class="w-4 h-4"></i>
@@ -72,34 +76,28 @@
       </div>
     </header>
 
-    <!-- 메인 콘텐츠 영역 -->
     <main class="mx-auto max-w-5xl px-4 py-6 md:px-8">
       
-      <!-- 타임라인 뷰 -->
+      <!-- 1. 타임라인 뷰 (원래의 감성적인 메인 대문) -->
       <section id="timeline-view" class="flex flex-col md:flex-row gap-6 md:gap-8">
-        <aside id="year-nav" class="sticky top-16 z-10 flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 md:w-28 flex-shrink-0 bg-[#FDFBF7]/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
-          <span class="text-xs font-semibold uppercase text-stone-400 hidden md:block mb-1">연도별 탐색</span>
+        <aside id="year-nav" class="sticky top-16 z-10 flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 md:w-28 flex-shrink-0 bg-[#FDFBF7]/90 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
+          <span class="text-xs font-semibold uppercase text-stone-400 hidden md:block mb-1">탐색</span>
         </aside>
 
         <div id="posts-container" class="flex-1 space-y-8 md:space-y-10 border-l-2 border-amber-200/70 pl-4 md:pl-8 ml-2 md:ml-0"></div>
       </section>
 
-      <!-- 지도 여행 뷰 -->
+      <!-- 2. 지도 여행 모드 뷰 -->
       <section id="map-view" class="hidden flex-col gap-4">
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs" id="map-year-filters">
-          <span class="font-semibold text-stone-500 whitespace-nowrap">연도 필터:</span>
-          <button onclick="filterMapYear('ALL')" class="map-filter-btn rounded-full px-3 py-1 font-medium bg-stone-900 text-white transition" data-year="ALL">전체</button>
-        </div>
-
-        <div class="relative w-full h-[520px] md:h-[580px] rounded-2xl overflow-hidden shadow-lg border border-stone-200 bg-stone-100 flex flex-col md:flex-row">
+        <div class="relative w-full h-[540px] md:h-[600px] rounded-2xl overflow-hidden shadow-lg border border-stone-200 bg-stone-100 flex flex-col md:flex-row">
           <div id="leaflet-map" class="relative flex-1 h-full w-full"></div>
           <div id="map-preview-panel" class="w-full md:w-80 bg-white p-5 border-t md:border-t-0 md:border-l border-stone-200 flex flex-col justify-between hidden">
             <div>
               <div id="map-preview-date" class="text-xs text-amber-600 font-semibold mb-1"></div>
-              <h3 id="map-preview-title" class="font-bold text-stone-900 text-base md:text-lg leading-snug"></h3>
+              <h3 id="map-preview-title" class="font-bold text-stone-900 text-lg leading-snug"></h3>
               <p id="map-preview-loc" class="text-xs text-stone-500 mt-1"></p>
-              <div id="map-preview-img-wrap" class="mt-3 relative aspect-video rounded-lg overflow-hidden bg-stone-100">
-                <img id="map-preview-img" src="" class="w-full h-full object-cover">
+              <div class="mt-3 relative aspect-video rounded-xl overflow-hidden bg-stone-100">
+                <img id="map-preview-img" class="w-full h-full object-cover">
               </div>
               <p id="map-preview-desc" class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed"></p>
             </div>
@@ -113,34 +111,39 @@
     </main>
   </div>
 
-  <!-- 넷플릭스 뷰 모달 -->
+  <!-- 3. 넷플릭스/OTT 시네마틱 상세 뷰어 (카드 클릭 시 열림) -->
   <div id="netflix-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-0 md:p-6 backdrop-blur-md hidden animate-fadeIn">
-    <button onclick="closeNetflixModal()" class="absolute top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition active:scale-90">
+    <!-- 닫기 버튼 -->
+    <button onclick="closeNetflixModal()" class="absolute top-4 right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition active:scale-90">
       <i data-lucide="x" class="w-6 h-6"></i>
     </button>
 
-    <div class="relative h-full w-full max-w-5xl overflow-y-auto bg-stone-950 text-white rounded-none md:rounded-2xl shadow-2xl flex flex-col">
+    <!-- 모달 본체: 넷플릭스 와이드 스타일 -->
+    <div class="relative h-full w-full max-w-5xl overflow-y-auto bg-[#141414] text-white rounded-none md:rounded-3xl shadow-2xl flex flex-col">
+      <!-- 상단 메인 시네마틱 와이드 뷰어 -->
       <div class="relative aspect-video w-full bg-black flex items-center justify-center">
         <div id="modal-player-wrap" class="w-full h-full flex items-center justify-center"></div>
       </div>
 
-      <div class="p-5 md:p-8 space-y-6 flex-1 bg-stone-950">
+      <!-- 콘텐츠 상세 설명 & 하단 와이드 가로 슬라이더 -->
+      <div class="p-5 md:p-8 space-y-5 flex-1 bg-[#141414]">
         <div>
-          <div id="modal-meta" class="flex items-center gap-2 text-xs font-semibold tracking-wider text-amber-400 uppercase"></div>
-          <h2 id="modal-title" class="text-xl md:text-3xl font-bold mt-1"></h2>
+          <div id="modal-meta" class="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-400 uppercase"></div>
+          <h2 id="modal-title" class="text-xl md:text-3xl font-extrabold mt-1 text-white"></h2>
           <p id="modal-desc" class="mt-2 text-stone-300 text-xs md:text-sm leading-relaxed max-w-3xl"></p>
         </div>
 
-        <div>
-          <h4 id="modal-slider-count" class="text-xs md:text-sm font-semibold text-stone-400 mb-3">미디어 목록</h4>
-          <div id="modal-thumbnails" class="flex gap-3 md:gap-4 overflow-x-auto pb-4"></div>
+        <!-- 하단 넷플릭스형 썸네일 바 (스마트폰에서도 시원하게 가로 스와이프) -->
+        <div class="pt-2">
+          <h4 id="modal-slider-count" class="text-xs md:text-sm font-bold text-stone-400 mb-3">모아보기</h4>
+          <div id="modal-thumbnails" class="flex gap-3 md:gap-4 overflow-x-auto pb-4 slider-touch"></div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    const FAMILY_PIN = "1234"; // 가족 접속 비밀번호
+    const FAMILY_PIN = "1234";
 
     let activePost = null;
     let leafletMap = null;
@@ -185,22 +188,22 @@
       const postsContainer = document.getElementById('posts-container');
       const yearNav = document.getElementById('year-nav');
       postsContainer.innerHTML = '';
-      yearNav.innerHTML = '<span class="text-xs font-semibold uppercase text-stone-400 hidden md:block mb-1">연도별 탐색</span>';
+      yearNav.innerHTML = '<span class="text-xs font-semibold uppercase text-stone-400 hidden md:block mb-1">탐색</span>';
 
-      const years = [...new Set(memoriesData.map(m => m.year))].sort((a, b) => b - a);
+      const categories = [...new Set(memoriesData.map(m => m.year))];
 
-      years.forEach(y => {
+      categories.forEach(cat => {
         const a = document.createElement('a');
-        a.href = `#year-${y}`;
+        a.href = `#sec-${cat}`;
         a.className = "rounded-lg px-3 py-1.5 text-center text-xs font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 transition whitespace-nowrap";
-        a.innerText = `${y}년`;
+        a.innerText = typeof cat === 'number' ? `${cat}년` : cat;
         yearNav.appendChild(a);
       });
 
       memoriesData.forEach(post => {
         const card = document.createElement('article');
-        card.id = `year-${post.year}`;
-        card.className = "group relative cursor-pointer rounded-2xl bg-white p-4 md:p-6 shadow-sm ring-1 ring-stone-900/5 transition hover:shadow-md active:scale-[0.99]";
+        card.id = `sec-${post.year}`;
+        card.className = "group relative cursor-pointer rounded-2xl bg-white p-4 md:p-6 shadow-sm ring-1 ring-stone-900/5 transition hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]";
         card.onclick = () => openNetflixModal(post);
 
         const isVideo = post.coverMedia && post.coverMedia.type === 'video';
@@ -215,7 +218,7 @@
               <i data-lucide="map-pin" class="w-3.5 h-3.5 text-stone-400"></i> ${post.location.name}
             </span>
           </div>
-          <h3 class="text-base md:text-xl font-bold text-stone-900 group-hover:text-amber-600 transition">${post.title}</h3>
+          <h3 class="text-lg md:text-xl font-bold text-stone-900 group-hover:text-amber-600 transition">${post.title}</h3>
           <p class="mt-1 text-xs md:text-sm text-stone-600 line-clamp-2">${post.description}</p>
           <div class="relative mt-3 md:mt-4 aspect-video md:aspect-[21/9] w-full overflow-hidden rounded-xl bg-stone-100">
             <img src="${post.coverMedia.thumbnailUrl}" class="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy">
@@ -237,7 +240,11 @@
 
     function openNetflixModal(post) {
       activePost = post;
-      document.getElementById('modal-meta').innerText = `${post.year}년의 추억 • ${post.location.name}`;
+      const metaText = typeof post.year === 'number' 
+        ? `${post.year}년 • ${post.location.name}` 
+        : `${post.location.name}`;
+      
+      document.getElementById('modal-meta').innerText = metaText;
       document.getElementById('modal-title').innerText = post.title;
       document.getElementById('modal-desc').innerText = post.description;
       document.getElementById('modal-slider-count').innerText = `모아보기 (${post.mediaList.length})`;
@@ -249,14 +256,15 @@
 
       post.mediaList.forEach(m => {
         const item = document.createElement('div');
-        item.className = "relative flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition hover:scale-105 opacity-80 hover:opacity-100 ring-1 ring-white/10";
-        item.style.width = "140px";
-        item.style.height = "90px";
+        item.className = "relative flex-shrink-0 cursor-pointer overflow-hidden rounded-xl transition transform duration-200 hover:scale-105 active:scale-95 ring-1 ring-white/10 shadow-lg";
+        // 모바일에서도 보기 편한 큼직한 비율
+        item.style.width = "170px";
+        item.style.height = "105px";
         item.onclick = (e) => { e.stopPropagation(); renderActiveMedia(m); };
         item.innerHTML = `
           <img src="${m.thumbnailUrl}" class="w-full h-full object-cover" loading="lazy">
-          <div class="absolute bottom-1 right-1 rounded bg-black/70 p-1 text-white text-[10px]">
-            ${m.type === 'video' ? '<i data-lucide="play" class="w-3 h-3 fill-current"></i>' : '<i data-lucide="image" class="w-3 h-3"></i>'}
+          <div class="absolute bottom-1.5 right-1.5 rounded-md bg-black/70 p-1 text-white text-[10px]">
+            ${m.type === 'video' ? '<i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>' : '<i data-lucide="image" class="w-3.5 h-3.5"></i>'}
           </div>
         `;
         thumbContainer.appendChild(item);
@@ -301,26 +309,20 @@
     }
 
     function initMap() {
-      leafletMap = L.map('leaflet-map').setView([20.0, 115.0], 4);
+      leafletMap = L.map('leaflet-map').setView([18.0, 115.0], 4);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
       }).addTo(leafletMap);
 
       markersLayer = L.layerGroup().addTo(leafletMap);
-      renderMapMarkers('ALL');
-    }
 
-    function renderMapMarkers(yearFilter) {
-      markersLayer.clearLayers();
-      const list = yearFilter === 'ALL' ? memoriesData : memoriesData.filter(m => m.year === yearFilter);
-
-      list.forEach(post => {
+      memoriesData.forEach(post => {
         const customIcon = L.divIcon({
           className: 'custom-pin',
-          html: `<div style="width:38px;height:38px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);overflow:hidden;background:#000;">
+          html: `<div style="width:40px;height:40px;border-radius:50%;border:2px solid #d97706;box-shadow:0 2px 8px rgba(0,0,0,0.3);overflow:hidden;background:#000;">
                   <img src="${post.coverMedia.thumbnailUrl}" style="width:100%;height:100%;object-fit:cover;">
                  </div>`,
-          iconSize: [38, 38]
+          iconSize: [40, 40]
         });
 
         const marker = L.marker([post.location.lat, post.location.lng], { icon: customIcon });
@@ -338,10 +340,6 @@
       document.getElementById('map-preview-img').src = post.coverMedia.thumbnailUrl;
       document.getElementById('map-preview-desc').innerText = post.description;
       document.getElementById('map-preview-btn').onclick = () => openNetflixModal(post);
-    }
-
-    function filterMapYear(year) {
-      renderMapMarkers(year);
     }
 
     window.onload = checkAuth;
