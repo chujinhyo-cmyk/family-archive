@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>우리 가족 추억보관소</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data.js"></script>
+  <style>
+    ::-webkit-scrollbar { height: 6px; width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .no-select { -webkit-tap-highlight-color: transparent; user-select: none; }
+  </style>
+</head>
+<body class="bg-[#FDFBF7] text-stone-800 antialiased selection:bg-amber-100 min-h-screen">
+
+  <!-- 가족 전용 로그인/PIN 잠금 게이트웨이 -->
+  <div id="pin-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFBF7] px-4">
+    <div class="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-xl border border-stone-200">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 mb-4 shadow-sm">
+        <i data-lucide="lock" class="h-7 w-7"></i>
+      </div>
+      <h2 class="text-xl font-bold text-stone-900 font-serif">가족 인증</h2>
+      <p class="mt-1 text-xs text-stone-500">우리 가족 전용 비밀번호를 입력해주세요.</p>
+      
+      <form onsubmit="verifyPin(event)" class="mt-6 space-y-4">
+        <input 
+          type="password" 
+          id="pin-input" 
+          maxlength="8" 
+          inputmode="numeric" 
+          pattern="[0-9]*" 
+          placeholder="PIN 번호 입력" 
+          class="w-full tracking-widest text-center text-xl font-bold py-3 px-4 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+          autofocus
+        />
+        <p id="pin-error" class="text-xs text-rose-500 hidden font-medium">비밀번호가 올바르지 않습니다.</p>
+        <button 
+          type="submit" 
+          class="w-full py-3 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-amber-600 transition shadow-md active:scale-95"
+        >
+          추억보관소 들어가기
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 메인 플랫폼 컨테이너 (인증 후 노출) -->
+  <div id="main-app" class="hidden">
+    <!-- 상단 헤더 -->
+    <header class="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200/80 bg-[#FDFBF7]/90 px-4 py-3 backdrop-blur-md md:px-8">
+      <div>
+        <h1 class="text-lg md:text-2xl font-bold tracking-tight text-stone-900 font-serif">
+          우리 가족 추억보관소
+        </h1>
+        <p class="text-[11px] md:text-xs text-stone-500 hidden sm:block">함께 걸어온 소중한 시간과 이야기</p>
+      </div>
+
+      <div class="flex rounded-full bg-stone-200/80 p-1 text-xs md:text-sm font-medium">
+        <button id="btn-timeline" onclick="switchView('timeline')" class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 bg-white text-stone-900 shadow-sm transition">
+          <i data-lucide="clock" class="w-4 h-4"></i>
+          <span>타임라인</span>
+        </button>
+        <button id="btn-map" onclick="switchView('map')" class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-stone-600 hover:text-stone-900 transition">
+          <i data-lucide="map" class="w-4 h-4"></i>
+          <span>지도 여행</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="mx-auto max-w-5xl px-4 py-6 md:px-8">
+      
+      <!-- 타임라인 뷰 -->
+      <section id="timeline-view" class="flex flex-col md:flex-row gap-6 md:gap-8">
+        <aside id="year-nav" class="sticky top-16 z-10 flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 md:w-28 flex-shrink-0 bg-[#FDFBF7]/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
+          <span class="text-xs font-semibold uppercase text-stone-400 hidden md:block mb-1">연도별 탐색</span>
+        </aside>
+
+        <div id="posts-container" class="flex-1 space-y-8 md:space-y-10 border-l-2 border-amber-200/70 pl-4 md:pl-8 ml-2 md:ml-0"></div>
+      </section>
+
+      <!-- 지도 여행 뷰 -->
+      <section id="map-view" class="hidden flex-col gap-4">
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs" id="map-year-filters">
+          <span class="font-semibold text-stone-500 whitespace-nowrap">연도 필터:</span>
+          <button onclick="filterMapYear('ALL')" class="map-filter-btn rounded-full px-3 py-1 font-medium bg-stone-900 text-white transition" data-year="ALL">전체</button>
+        </div>
+
+        <div class="relative w-full h-[520px] md:h-[580px] rounded-2xl overflow-hidden shadow-lg border border-stone-200 bg-stone-100 flex flex-col md:flex-row">
+          <div id="leaflet-map" class="relative flex-1 h-full w-full"></div>
+          <div id="map-preview-panel" class="w-full md:w-80 bg-white p-5 border-t md:border-t-0 md:border-l border-stone-200 flex flex-col justify-between hidden">
+            <div>
+              <div id="map-preview-date" class="text-xs text-amber-600 font-semibold mb-1"></div>
+              <h3 id="map-preview-title" class="font-bold text-stone-900 text-base md:text-lg leading-snug"></h3>
+              <p id="map-preview-loc" class="text-xs text-stone-500 mt-1"></p>
+              <div id="map-preview-img-wrap" class="mt-3 relative aspect-video rounded-lg overflow-hidden bg-stone-100">
+                <img id="map-preview-img" src="" class="w-full h-full object-cover">
+              </div>
+              <p id="map-preview-desc" class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed"></p>
+            </div>
+            <button id="map-preview-btn" class="mt-4 w-full py-2.5 rounded-xl bg-stone-900 text-white text-xs font-semibold hover:bg-amber-600 transition shadow-sm active:scale-95">
+              넷플릭스 모드로 감상하기 →
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- 넷플릭스 뷰 모달 -->
+  <div id="netflix-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-0 md:p-6 backdrop-blur-md hidden animate-fadeIn">
+    <button onclick="closeNetflixModal()" class="absolute top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition active:scale-90">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+
+    <div class="relative h-full w-full max-w-5xl overflow-y-auto bg-stone-950 text-white rounded-none md:rounded-2xl shadow-2xl flex flex-col">
+      <div class="relative aspect-video w-full bg-black flex items-center justify-center">
+        <div id="modal-player-wrap" class="w-full h-full flex items-center justify-center"></div>
+      </div>
+
+      <div class="p-5 md:p-8 space-y-6 flex-1 bg-stone-950">
+        <div>
+          <div id="modal-meta" class="flex items-center gap-2 text-xs font-semibold tracking-wider text-amber-400 uppercase"></div>
+          <h2 id="modal-title" class="text-xl md:text-3xl font-bold mt-1"></h2>
+          <p id="modal-desc" class="mt-2 text-stone-300 text-xs md:text-sm leading-relaxed max-w-3xl"></p>
+        </div>
+
+        <div>
+          <h4 id="modal-slider-count" class="text-xs md:text-sm font-semibold text-stone-400 mb-3">미디어 목록</h4>
+          <div id="modal-thumbnails" class="flex gap-3 md:gap-4 overflow-x-auto pb-4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FAMILY_PIN = "1234"; // 가족 접속 비밀번호
+
+    let activePost = null;
+    let leafletMap = null;
+    let markersLayer = null;
+
+    function verifyPin(e) {
+      e.preventDefault();
+      const val = document.getElementById('pin-input').value;
+      if (val === FAMILY_PIN) {
+        sessionStorage.setItem('family_auth', 'true');
+        unlockSite();
+      } else {
+        document.getElementById('pin-error').classList.remove('hidden');
+      }
+    }
+
+    function unlockSite() {
+      document.getElementById('pin-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      initPage();
+    }
+
+    function checkAuth() {
+      if (sessionStorage.getItem('family_auth') === 'true') {
+        unlockSite();
+      } else {
+        lucide.createIcons();
+      }
+    }
+
+    function initPage() {
+      if (typeof memoriesData === 'undefined' || !memoriesData || memoriesData.length === 0) {
+        alert("data.js 데이터를 찾을 수 없습니다.");
+        return;
+      }
+      renderTimeline();
+      initMap();
+      lucide.createIcons();
+    }
+
+    function renderTimeline() {
+      const postsContainer = document.getElementById('posts-container');
+      const yearNav = document.getElementById('year-nav');
+      postsContainer.innerHTML = '';
+      yearNav.innerHTML = '<span class="text-xs font-semibold uppercase text-stone-400 hidden md:block mb-1">연도별 탐색</span>';
+
+      const years = [...new Set(memoriesData.map(m => m.year))].sort((a, b) => b - a);
+
+      years.forEach(y => {
+        const a = document.createElement('a');
+        a.href = `#year-${y}`;
+        a.className = "rounded-lg px-3 py-1.5 text-center text-xs font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 transition whitespace-nowrap";
+        a.innerText = `${y}년`;
+        yearNav.appendChild(a);
+      });
+
+      memoriesData.forEach(post => {
+        const card = document.createElement('article');
+        card.id = `year-${post.year}`;
+        card.className = "group relative cursor-pointer rounded-2xl bg-white p-4 md:p-6 shadow-sm ring-1 ring-stone-900/5 transition hover:shadow-md active:scale-[0.99]";
+        card.onclick = () => openNetflixModal(post);
+
+        const isVideo = post.coverMedia && post.coverMedia.type === 'video';
+
+        card.innerHTML = `
+          <div class="absolute -left-[25px] md:-left-[41px] top-6 h-4 w-4 rounded-full border-4 border-[#FDFBF7] bg-amber-500 shadow-sm"></div>
+          <div class="flex flex-wrap items-center gap-2 md:gap-3 text-xs text-stone-500 mb-2">
+            <span class="bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${post.date}
+            </span>
+            <span class="flex items-center gap-1">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-stone-400"></i> ${post.location.name}
+            </span>
+          </div>
+          <h3 class="text-base md:text-xl font-bold text-stone-900 group-hover:text-amber-600 transition">${post.title}</h3>
+          <p class="mt-1 text-xs md:text-sm text-stone-600 line-clamp-2">${post.description}</p>
+          <div class="relative mt-3 md:mt-4 aspect-video md:aspect-[21/9] w-full overflow-hidden rounded-xl bg-stone-100">
+            <img src="${post.coverMedia.thumbnailUrl}" class="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy">
+            ${isVideo ? `
+              <div class="absolute inset-0 flex items-center justify-center bg-black/25">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-stone-900 shadow-lg">
+                  <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+                </div>
+              </div>` : ''}
+          </div>
+          <div class="mt-3 flex items-center justify-between text-xs text-stone-400">
+            <span>미디어 ${post.mediaList.length}개</span>
+            <span class="font-semibold text-amber-700 group-hover:underline">넷플릭스 모드로 감상하기 →</span>
+          </div>
+        `;
+        postsContainer.appendChild(card);
+      });
+    }
+
+    function openNetflixModal(post) {
+      activePost = post;
+      document.getElementById('modal-meta').innerText = `${post.year}년의 추억 • ${post.location.name}`;
+      document.getElementById('modal-title').innerText = post.title;
+      document.getElementById('modal-desc').innerText = post.description;
+      document.getElementById('modal-slider-count').innerText = `모아보기 (${post.mediaList.length})`;
+
+      renderActiveMedia(post.coverMedia);
+
+      const thumbContainer = document.getElementById('modal-thumbnails');
+      thumbContainer.innerHTML = '';
+
+      post.mediaList.forEach(m => {
+        const item = document.createElement('div');
+        item.className = "relative flex-shrink-0 cursor-pointer overflow-hidden rounded-lg transition hover:scale-105 opacity-80 hover:opacity-100 ring-1 ring-white/10";
+        item.style.width = "140px";
+        item.style.height = "90px";
+        item.onclick = (e) => { e.stopPropagation(); renderActiveMedia(m); };
+        item.innerHTML = `
+          <img src="${m.thumbnailUrl}" class="w-full h-full object-cover" loading="lazy">
+          <div class="absolute bottom-1 right-1 rounded bg-black/70 p-1 text-white text-[10px]">
+            ${m.type === 'video' ? '<i data-lucide="play" class="w-3 h-3 fill-current"></i>' : '<i data-lucide="image" class="w-3 h-3"></i>'}
+          </div>
+        `;
+        thumbContainer.appendChild(item);
+      });
+
+      document.getElementById('netflix-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function renderActiveMedia(media) {
+      const wrap = document.getElementById('modal-player-wrap');
+      if (media.type === 'video') {
+        wrap.innerHTML = `<iframe src="${media.url}" class="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+      } else {
+        wrap.innerHTML = `<img src="${media.url}" class="max-h-full max-w-full object-contain">`;
+      }
+    }
+
+    function closeNetflixModal() {
+      document.getElementById('netflix-modal').classList.add('hidden');
+      document.getElementById('modal-player-wrap').innerHTML = '';
+    }
+
+    function switchView(mode) {
+      const btnT = document.getElementById('btn-timeline');
+      const btnM = document.getElementById('btn-map');
+      const viewT = document.getElementById('timeline-view');
+      const viewM = document.getElementById('map-view');
+
+      if (mode === 'timeline') {
+        btnT.className = "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 bg-white text-stone-900 shadow-sm transition";
+        btnM.className = "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-stone-600 hover:text-stone-900 transition";
+        viewT.classList.remove('hidden');
+        viewM.classList.add('hidden');
+      } else {
+        btnM.className = "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 bg-white text-stone-900 shadow-sm transition";
+        btnT.className = "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-stone-600 hover:text-stone-900 transition";
+        viewM.classList.remove('hidden');
+        viewT.classList.add('hidden');
+        setTimeout(() => leafletMap.invalidateSize(), 200);
+      }
+    }
+
+    function initMap() {
+      leafletMap = L.map('leaflet-map').setView([20.0, 115.0], 4);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(leafletMap);
+
+      markersLayer = L.layerGroup().addTo(leafletMap);
+      renderMapMarkers('ALL');
+    }
+
+    function renderMapMarkers(yearFilter) {
+      markersLayer.clearLayers();
+      const list = yearFilter === 'ALL' ? memoriesData : memoriesData.filter(m => m.year === yearFilter);
+
+      list.forEach(post => {
+        const customIcon = L.divIcon({
+          className: 'custom-pin',
+          html: `<div style="width:38px;height:38px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);overflow:hidden;background:#000;">
+                  <img src="${post.coverMedia.thumbnailUrl}" style="width:100%;height:100%;object-fit:cover;">
+                 </div>`,
+          iconSize: [38, 38]
+        });
+
+        const marker = L.marker([post.location.lat, post.location.lng], { icon: customIcon });
+        marker.on('click', () => showMapPreview(post));
+        markersLayer.addLayer(marker);
+      });
+    }
+
+    function showMapPreview(post) {
+      const p = document.getElementById('map-preview-panel');
+      p.classList.remove('hidden');
+      document.getElementById('map-preview-date').innerText = post.date;
+      document.getElementById('map-preview-title').innerText = post.title;
+      document.getElementById('map-preview-loc').innerText = `📍 ${post.location.name}`;
+      document.getElementById('map-preview-img').src = post.coverMedia.thumbnailUrl;
+      document.getElementById('map-preview-desc').innerText = post.description;
+      document.getElementById('map-preview-btn').onclick = () => openNetflixModal(post);
+    }
+
+    function filterMapYear(year) {
+      renderMapMarkers(year);
+    }
+
+    window.onload = checkAuth;
+  </script>
+</body>
+</html>
