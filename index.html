@@ -3,77 +3,393 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>우리 가족 추억 갤러리</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>가족 사진첩</title>
   <style>
-    /* 가로 스크롤바 숨기기 (터치 슬라이드 최적화) */
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    /* 뷰어 이미지 터치 제스처 허용 */
-    .zoom-img { transition: transform 0.15s ease-out; touch-action: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #F5F0E6;
+      color: #3C322B;
+      font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", dotum, sans-serif;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ------------------------------
+       [공통 및 PC 헤더]
+    ------------------------------ */
+    header {
+      background-color: #FFF8F0;
+      border-bottom: 1px solid #D2B48C;
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .pc-title {
+      font-size: 24px;
+      color: #4A2E1A;
+      margin-bottom: 14px;
+      font-weight: 800;
+    }
+    .mobile-top-bar {
+      display: none;
+    }
+    .year-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .year-bar::-webkit-scrollbar { display: none; }
+    .year-btn {
+      background-color: #EADDCA;
+      color: #4A2E1A;
+      border: 1px solid #D2B48C;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: 0.2s;
+    }
+    .year-btn:hover { background-color: #dcc8b0; }
+    .year-btn.active {
+      background-color: #4A2E1A;
+      color: #FFFFFF;
+      border-color: #4A2E1A;
+    }
+
+    /* ------------------------------
+       [PC 본문 타임라인 레이아웃 (유지)]
+    ------------------------------ */
+    main {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    .month-section {
+      background: #FFFFFF;
+      border: 1px solid #D2B48C;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      box-shadow: 0 2px 8px rgba(74, 46, 26, 0.05);
+    }
+    .folder-cover-wrap {
+      flex: 0 0 320px;
+      max-width: 100%;
+      background: #FFF8F0;
+      border: 2px solid #D2B48C;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .folder-cover-img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      border-radius: 8px;
+      display: block;
+      background-color: #eee;
+    }
+    .folder-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #4A2E1A;
+      margin-top: 10px;
+    }
+    .folder-desc {
+      font-size: 13px;
+      color: #7A7269;
+      margin-top: 4px;
+    }
+    .photo-grid-wrap {
+      flex: 1;
+      width: 100%;
+    }
+    .photo-grid-header {
+      font-size: 13px;
+      color: #7A7269;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 8px;
+      background: #EADDCA;
+      padding: 12px;
+      border-radius: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .thumb-item {
+      aspect-ratio: 1 / 1;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      background: #000;
+      transition: transform 0.15s;
+    }
+    .thumb-item:hover { transform: scale(1.05); }
+    .thumb-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ------------------------------
+       [휴대폰 모바일 화면 전용 디자인 (시안 반영)]
+    ------------------------------ */
+    @media (max-width: 768px) {
+      body { background-color: #FFFFFF; }
+      header {
+        padding: 10px 14px;
+        background-color: #FFFFFF;
+        border-bottom: 1px solid #EEEEEE;
+      }
+      .pc-title { display: none; }
+      .mobile-top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .mobile-icon-btn {
+        font-size: 20px;
+        color: #333333;
+        background: none;
+        border: none;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .mobile-page-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #222222;
+        letter-spacing: -0.5px;
+      }
+
+      /* 첨부 이미지 상단 Year [2020] [2021] 텍스트 바 */
+      .year-bar {
+        gap: 4px;
+        align-items: center;
+      }
+      .year-bar::before {
+        content: "Year ";
+        font-weight: 800;
+        font-size: 13px;
+        color: #111111;
+        margin-right: 2px;
+        white-space: nowrap;
+      }
+      .year-btn {
+        background: transparent !important;
+        border: none !important;
+        padding: 2px 4px !important;
+        font-size: 13px !important;
+        font-weight: normal !important;
+        color: #666666 !important;
+        border-radius: 0 !important;
+      }
+      .year-btn::before { content: "["; }
+      .year-btn::after { content: "]"; }
+      .year-btn.active {
+        color: #000000 !important;
+        font-weight: 800 !important;
+      }
+
+      /* 모바일 본문: 3열 세로 직사각형 카드 레이아웃 */
+      main {
+        margin: 10px auto;
+        padding: 0 8px;
+      }
+      .month-section {
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin-bottom: 18px;
+        display: block;
+        box-shadow: none;
+      }
+      .folder-cover-wrap { display: none; } /* 모바일에서는 통합 바둑판 표시 */
+      .photo-grid-header {
+        font-size: 12px;
+        color: #444444;
+        margin-bottom: 6px;
+        padding-left: 2px;
+        font-weight: 700;
+      }
+      .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        background: transparent;
+        padding: 0;
+        max-height: none;
+        overflow-y: visible;
+      }
+      .thumb-item {
+        aspect-ratio: 9 / 14; /* 첨부 이미지의 세로형 모바일 카드 비율 */
+        border-radius: 12px;
+        position: relative;
+      }
+      .thumb-item:hover { transform: none; }
+      /* 모바일 카드 상단 월 뱃지 라벨 */
+      .thumb-item::after {
+        content: attr(data-month);
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        color: #FFFFFF;
+        font-size: 9px;
+        font-weight: 700;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    /* ------------------------------
+       [전체화면 뷰어 (PC/모바일 공통 유지)]
+    ------------------------------ */
+    #viewer-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.95);
+      z-index: 999;
+      flex-direction: column;
+      user-select: none;
+    }
+    #viewer-modal.active { display: flex; }
+    .viewer-header {
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #FFF;
+      background: rgba(0, 0, 0, 0.4);
+    }
+    .viewer-info-title { font-size: 15px; font-weight: bold; }
+    .viewer-info-sub { font-size: 12px; color: #AAA; margin-top: 2px; }
+    .viewer-close {
+      font-size: 28px;
+      cursor: pointer;
+      color: #FFF;
+      line-height: 1;
+      padding: 0 8px;
+    }
+    .viewer-body {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    #viewer-img {
+      max-width: 92%;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+    }
+    .nav-zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 50%;
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+    }
+    .nav-zone.left {
+      left: 0;
+      justify-content: flex-start;
+      padding-left: 20px;
+    }
+    .nav-zone.right {
+      right: 0;
+      justify-content: flex-end;
+      padding-right: 20px;
+    }
+    .nav-arrow {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 44px;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    .nav-zone:hover .nav-arrow { color: rgba(255, 255, 255, 0.9); }
+    .viewer-footer {
+      padding: 12px;
+      text-align: center;
+      color: #888;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.4);
+    }
   </style>
 </head>
-<body class="bg-[#F8F9FA] text-stone-800 min-h-screen select-none">
+<body>
 
-  <!-- 1. 고정 상단 네비게이션 헤더 -->
-  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200 px-4 py-3 shadow-sm">
-    <div class="max-w-6xl mx-auto flex items-center justify-between">
-      <div>
-        <h1 class="text-lg md:text-xl font-extrabold text-stone-900 tracking-tight">가족의 계절, 우리의 시간</h1>
-        <p class="text-[11px] text-stone-400">사진을 누르면 크게 볼 수 있습니다</p>
+  <!-- 상단 네비게이션 -->
+  <header>
+    <div class="header-inner">
+      <!-- PC 전용 타이틀 -->
+      <h1 class="pc-title">가족 사진첩</h1>
+
+      <!-- 모바일 전용 앱 스타일 상단 바 -->
+      <div class="mobile-top-bar">
+        <button class="mobile-icon-btn">&#9776;</button>
+        <span class="mobile-page-title">가족 사진첩</span>
+        <button class="mobile-icon-btn">&#9906;</button>
       </div>
-      <span id="header-badge" class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1 rounded-full font-semibold"></span>
+
+      <!-- 연도 바 (PC: 알약 버튼 / 모바일: Year [2026] 형태) -->
+      <div class="year-bar" id="year-bar"></div>
     </div>
-
-    <!-- 연도 칩 바 (가로 스크롤 슬라이드, 드롭다운 없음) -->
-    <div class="max-w-6xl mx-auto mt-3 flex gap-2 overflow-x-auto no-scrollbar pb-1" id="year-chips"></div>
-
-    <!-- 이벤트 칩 바 (선택된 연도의 하위 이벤트 목록) -->
-    <div class="max-w-6xl mx-auto mt-2 flex gap-2 overflow-x-auto no-scrollbar pb-1" id="event-chips"></div>
   </header>
 
-  <!-- 2. 메인 사진 영역 -->
-  <main class="max-w-6xl mx-auto p-3 md:p-6">
-    <!-- 이벤트 타이틀 및 AI 설명 카드 -->
-    <div class="mb-4 bg-white p-4 md:p-5 rounded-2xl border border-stone-200 shadow-sm">
-      <div class="flex items-center gap-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-        <h2 class="text-base md:text-xl font-bold text-stone-900 tracking-tight" id="event-title">추억을 불러오는 중...</h2>
+  <!-- 메인 사진/폴더 컨텐츠 영역 -->
+  <main id="timeline-container"></main>
+
+  <!-- 전체화면 뷰어 -->
+  <div id="viewer-modal">
+    <div class="viewer-header">
+      <div>
+        <div class="viewer-info-title" id="v-title"></div>
+        <div class="viewer-info-sub" id="v-sub"></div>
       </div>
-      <p class="text-xs md:text-sm text-stone-500 mt-1.5 pl-4" id="event-desc"></p>
+      <div class="viewer-close" onclick="closeViewer()">&times;</div>
     </div>
 
-    <!-- 사진 그리드 (모바일 3열 컴팩트 뷰, PC 5열 정렬) -->
-    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 md:gap-3" id="photo-grid"></div>
-  </main>
+    <div class="viewer-body">
+      <!-- 왼쪽 클릭: 이전 사진 -->
+      <div class="nav-zone left" onclick="prevPhoto()">
+        <span class="nav-arrow">&#10094;</span>
+      </div>
 
-  <!-- 3. 전체화면 전용 뷰어 (확대/축소 및 뒤로가기) -->
-  <div id="viewer-modal" class="fixed inset-0 z-50 bg-black hidden flex flex-col justify-between">
-    <!-- 상단 툴바 -->
-    <div class="p-4 flex items-center justify-between text-white z-10 bg-gradient-to-b from-black/80 to-transparent">
-      <!-- 뒤로가기 버튼 -->
-      <button onclick="closeViewer()" class="flex items-center gap-2 bg-white/20 hover:bg-white/30 active:scale-95 px-4 py-2 rounded-full text-sm font-semibold backdrop-blur transition">
-        <i class="fa-solid fa-arrow-left"></i>
-        <span>뒤로가기</span>
-      </button>
+      <img id="viewer-img" src="" alt="사진">
 
-      <!-- 줌 조절 버튼 -->
-      <div class="flex items-center gap-1.5 bg-white/20 backdrop-blur px-2 py-1 rounded-full text-xs">
-        <button onclick="zoomStep(-0.3)" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 active:scale-90"><i class="fa-solid fa-minus"></i></button>
-        <button onclick="resetZoom()" class="px-2 py-1 hover:bg-white/20 rounded-md">100%</button>
-        <button onclick="zoomStep(0.3)" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 active:scale-90"><i class="fa-solid fa-plus"></i></button>
+      <!-- 오른쪽 클릭: 다음 사진 (마지막 사진일 시 대문 복귀) -->
+      <div class="nav-zone right" onclick="nextPhoto()">
+        <span class="nav-arrow" id="next-arrow">&#10095;</span>
       </div>
     </div>
 
-    <!-- 사진 표시 영역 (더블탭 확대 및 드래그/핀치 줌) -->
-    <div class="flex-1 flex items-center justify-center overflow-hidden p-2 relative" id="img-container">
-      <img id="viewer-img" src="" class="zoom-img max-h-full max-w-full object-contain cursor-grab active:cursor-grabbing" alt="확대 사진">
-    </div>
-
-    <!-- 하단 도움말 바 -->
-    <div class="p-3 text-center text-[11px] text-white/60 bg-gradient-to-t from-black/80 to-transparent">
-      화면을 두 번 연속 터치하면 확대되며, 좌측 상단 [뒤로가기]를 누르면 목록으로 돌아갑니다
+    <div class="viewer-footer" id="v-help">
+      화면 오른쪽을 누르면 다음 사진 · 마지막 사진에서 누르면 대문으로 돌아갑니다
     </div>
   </div>
 
@@ -81,196 +397,159 @@
   <script src="data.js"></script>
 
   <script>
-    let currentYIdx = 0;
-    let currentMIdx = 0;
-    let scale = 1;
-    let panX = 0, panY = 0;
-    let startX = 0, startY = 0;
-    let isDragging = false;
-    let initialDistance = null;
+    let currentYearIdx = 0;
+    let currentPhotos = [];
+    let currentPhotoIdx = 0;
+    let currentMonthTitle = "";
 
     function init() {
-      if (typeof GALLERY_DATA === 'undefined' || !GALLERY_DATA.length) {
-        document.getElementById('event-title').innerText = 'data.js를 읽어오지 못했습니다.';
+      if (typeof GALLERY_DATA === 'undefined' || !Array.isArray(GALLERY_DATA) || GALLERY_DATA.length === 0) {
+        document.getElementById('timeline-container').innerHTML =
+          '<p style="padding:20px; font-weight:bold; color:red;">data.js 파일을 불러올 수 없습니다.</p>';
         return;
       }
       renderYears();
       selectYear(0);
     }
 
-    // 연도 칩 렌더링
+    // 1. 연도 바 렌더링
     function renderYears() {
-      const el = document.getElementById('year-chips');
-      el.innerHTML = '';
+      const yearBar = document.getElementById('year-bar');
+      yearBar.innerHTML = '';
       GALLERY_DATA.forEach((item, idx) => {
         const btn = document.createElement('button');
-        btn.id = `y-btn-${idx}`;
-        btn.className = `px-4 py-1.5 rounded-full text-xs md:text-sm font-bold whitespace-nowrap transition active:scale-95 ${
-          idx === 0 ? 'bg-stone-900 text-white shadow' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-        }`;
-        btn.innerText = `${item.year}년`;
+        btn.className = 'year-btn' + (idx === 0 ? ' active' : '');
+        btn.innerText = item.year;
         btn.onclick = () => selectYear(idx);
-        el.appendChild(btn);
+        yearBar.appendChild(btn);
       });
     }
 
-    function selectYear(yIdx) {
-      currentYIdx = yIdx;
-      GALLERY_DATA.forEach((_, idx) => {
-        const b = document.getElementById(`y-btn-${idx}`);
-        if (b) b.className = `px-4 py-1.5 rounded-full text-xs md:text-sm font-bold whitespace-nowrap transition active:scale-95 ${
-          idx === yIdx ? 'bg-stone-900 text-white shadow' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-        }`;
-      });
-      renderEvents(yIdx);
-      selectEvent(0);
-    }
-
-    // 이벤트 칩 렌더링
-    function renderEvents(yIdx) {
-      const el = document.getElementById('event-chips');
-      el.innerHTML = '';
-      const months = GALLERY_DATA[yIdx].months;
-
-      months.forEach((m, idx) => {
-        const btn = document.createElement('button');
-        btn.id = `e-btn-${idx}`;
-        btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition border active:scale-95 ${
-          idx === 0 ? 'bg-amber-600 border-amber-600 text-white shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
-        }`;
-        btn.innerText = `${m.title} (${m.month})`;
-        btn.onclick = () => selectEvent(idx);
-        el.appendChild(btn);
-      });
-    }
-
-    function selectEvent(mIdx) {
-      currentMIdx = mIdx;
-      const data = GALLERY_DATA[currentYIdx].months[mIdx];
-
-      GALLERY_DATA[currentYIdx].months.forEach((_, idx) => {
-        const b = document.getElementById(`e-btn-${idx}`);
-        if (b) b.className = `px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition border active:scale-95 ${
-          idx === mIdx ? 'bg-amber-600 border-amber-600 text-white shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
-        }`;
+    // 2. 연도 선택 및 콘텐츠 표시
+    function selectYear(idx) {
+      currentYearIdx = idx;
+      const buttons = document.querySelectorAll('.year-btn');
+      buttons.forEach((b, bIdx) => {
+        if (bIdx === idx) b.classList.add('active');
+        else b.classList.remove('active');
       });
 
-      document.getElementById('event-title').innerText = data.title;
-      document.getElementById('event-desc').innerText = `${data.desc} · 총 ${data.photos.length}장`;
-      document.getElementById('header-badge').innerText = `${data.photos.length}장의 사진`;
+      const container = document.getElementById('timeline-container');
+      container.innerHTML = '';
 
-      const grid = document.getElementById('photo-grid');
-      grid.innerHTML = data.photos.map(p => `
-        <div class="aspect-square bg-stone-200 rounded-lg md:rounded-xl overflow-hidden shadow-sm active:scale-95 cursor-pointer relative group" onclick="openViewer('${p.url}')">
-          <img src="${p.url}" alt="${p.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
-        </div>
-      `).join('');
+      const months = GALLERY_DATA[idx].months || [];
+      months.forEach((m, mIdx) => {
+        if (!m.photos || m.photos.length === 0) return;
+
+        const coverPhoto = m.photos[0];
+
+        const section = document.createElement('div');
+        section.className = 'month-section';
+
+        // PC 전용 좌측 폴더 카드
+        const leftWrap = document.createElement('div');
+        leftWrap.className = 'folder-cover-wrap';
+        leftWrap.innerHTML = `
+          <img class="folder-cover-img" src="${coverPhoto.url}" alt="${coverPhoto.name}" loading="lazy" onclick="openViewer(${mIdx}, 0)" style="cursor:pointer;">
+          <div class="folder-title">${m.month}의 추억 (폴더)</div>
+          <div class="folder-desc">${m.title || ''} · 총 ${m.photos.length}장의 사진</div>
+        `;
+
+        // 우측 사진 그리드 (모바일에서는 3열 세로 직사각형 카드로 자동 전환)
+        const rightWrap = document.createElement('div');
+        rightWrap.className = 'photo-grid-wrap';
+
+        const gridHeader = document.createElement('div');
+        gridHeader.className = 'photo-grid-header';
+        gridHeader.innerText = `${m.month} (${m.photos.length}장)`;
+
+        const grid = document.createElement('div');
+        grid.className = 'photo-grid';
+
+        m.photos.forEach((p, pIdx) => {
+          const thumb = document.createElement('div');
+          thumb.className = 'thumb-item';
+          thumb.setAttribute('data-month', m.month); // 모바일 카드 상단에 표시될 라벨
+          thumb.innerHTML = `<img src="${p.url}" alt="${p.name}" loading="lazy">`;
+          thumb.onclick = () => openViewer(mIdx, pIdx);
+          grid.appendChild(thumb);
+        });
+
+        rightWrap.appendChild(gridHeader);
+        rightWrap.appendChild(grid);
+
+        section.appendChild(leftWrap);
+        section.appendChild(rightWrap);
+        container.appendChild(section);
+      });
     }
 
-    // 뷰어 제어 로직
+    // 3. 전체화면 뷰어 로직
     const modal = document.getElementById('viewer-modal');
     const vImg = document.getElementById('viewer-img');
+    const vTitle = document.getElementById('v-title');
+    const vSub = document.getElementById('v-sub');
+    const nextArrow = document.getElementById('next-arrow');
+    const vHelp = document.getElementById('v-help');
 
-    function openViewer(url) {
-      resetZoom();
-      vImg.src = url;
-      modal.classList.remove('hidden');
+    function openViewer(monthIdx, photoIdx) {
+      const monthData = GALLERY_DATA[currentYearIdx].months[monthIdx];
+      currentPhotos = monthData.photos;
+      currentMonthTitle = monthData.title || (monthData.month + '의 추억');
+      currentPhotoIdx = photoIdx;
+
+      updateViewer();
+      modal.classList.add('active');
       document.body.style.overflow = 'hidden';
-      // 브라우저 뒤로가기 버튼(히스토리) 대응
-      history.pushState({ viewerOpen: true }, '');
+    }
+
+    function updateViewer() {
+      const photo = currentPhotos[currentPhotoIdx];
+      vImg.src = photo.url;
+
+      vTitle.innerText = currentMonthTitle;
+      vSub.innerText = `${photo.name} [ ${currentPhotoIdx + 1} / ${currentPhotos.length} ]`;
+
+      const isLast = (currentPhotoIdx === currentPhotos.length - 1);
+      if (isLast) {
+        nextArrow.innerText = '⮌';
+        vHelp.innerText = '마지막 사진입니다. 화면 오른쪽을 한 번 더 누르면 대문으로 돌아갑니다.';
+      } else {
+        nextArrow.innerText = '❯';
+        vHelp.innerText = '화면 오른쪽을 누르면 다음 사진 · 왼쪽은 이전 사진';
+      }
     }
 
     function closeViewer() {
-      modal.classList.add('hidden');
+      modal.classList.remove('active');
       vImg.src = '';
       document.body.style.overflow = '';
-      resetZoom();
-      if (history.state && history.state.viewerOpen) {
-        history.back();
-      }
     }
 
-    // 브라우저 자체 '뒤로가기' 키나 제스처 시 모달 닫기
-    window.onpopstate = function() {
-      if (!modal.classList.contains('hidden')) {
-        modal.classList.add('hidden');
-        vImg.src = '';
-        document.body.style.overflow = '';
-      }
-    };
-
-    function updateTransform() {
-      vImg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-    }
-
-    function zoomStep(val) {
-      scale = Math.min(Math.max(1, scale + val), 4);
-      if (scale === 1) { panX = 0; panY = 0; }
-      updateTransform();
-    }
-
-    function resetZoom() {
-      scale = 1;
-      panX = 0;
-      panY = 0;
-      updateTransform();
-    }
-
-    // 더블 탭 확대
-    let lastTouchTime = 0;
-    vImg.addEventListener('touchend', (e) => {
-      const now = Date.now();
-      if (now - lastTouchTime < 300) {
-        scale = scale > 1 ? 1 : 2.2;
-        panX = 0; panY = 0;
-        updateTransform();
-      }
-      lastTouchTime = now;
-    });
-
-    // 드래그 및 핀치 줌 처리
-    const container = document.getElementById('img-container');
-    
-    container.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 2) {
-        initialDistance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-      } else if (e.touches.length === 1 && scale > 1) {
-        isDragging = true;
-        startX = e.touches[0].clientX - panX;
-        startY = e.touches[0].clientY - panY;
-      }
-    });
-
-    container.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 2 && initialDistance) {
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const factor = dist / initialDistance;
-        scale = Math.min(Math.max(1, scale * factor), 4);
-        initialDistance = dist;
-        updateTransform();
-      } else if (e.touches.length === 1 && isDragging) {
-        panX = e.touches[0].clientX - startX;
-        panY = e.touches[0].clientY - startY;
-        updateTransform();
-      }
-    });
-
-    container.addEventListener('touchend', () => {
-      isDragging = false;
-      initialDistance = null;
-      if (scale <= 1) { panX = 0; panY = 0; updateTransform(); }
-    });
-
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+    function nextPhoto() {
+      if (!currentPhotos.length) return;
+      if (currentPhotoIdx >= currentPhotos.length - 1) {
         closeViewer();
+        return;
       }
+      currentPhotoIdx++;
+      updateViewer();
+    }
+
+    function prevPhoto() {
+      if (!currentPhotos.length) return;
+      if (currentPhotoIdx > 0) {
+        currentPhotoIdx--;
+        updateViewer();
+      }
+    }
+
+    // 키보드 조작 지원
+    window.addEventListener('keydown', (e) => {
+      if (!modal.classList.contains('active')) return;
+      if (e.key === 'ArrowRight') nextPhoto();
+      if (e.key === 'ArrowLeft') prevPhoto();
+      if (e.key === 'Escape') closeViewer();
     });
 
     window.onload = init;
