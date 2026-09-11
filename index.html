@@ -1,436 +1,279 @@
-111<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
-  <title>우리 가족 추억보관소</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>우리 가족 추억 갤러리</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    document.write('<script src="data.js?v=' + Date.now() + '"><\/script>');
-  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    ::-webkit-scrollbar { height: 6px; width: 6px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    .slider-touch::-webkit-scrollbar { height: 4px; }
-    .slider-touch::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-    .touch-pan { touch-action: pan-y pinch-zoom; }
+    /* 가로 스크롤바 숨기기 (터치 슬라이드 최적화) */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* 뷰어 이미지 터치 제스처 허용 */
+    .zoom-img { transition: transform 0.15s ease-out; touch-action: none; }
   </style>
 </head>
-<body class="bg-[#FDFBF7] text-stone-800 antialiased selection:bg-amber-100 min-h-screen">
+<body class="bg-[#F8F9FA] text-stone-800 min-h-screen select-none">
 
-  <!-- 가족 전용 PIN 인증 게이트웨이 -->
-  <div id="pin-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFBF7] px-4">
-    <div class="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-xl border border-stone-200">
-      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 mb-4 shadow-sm">
-        <i data-lucide="lock" class="h-7 w-7"></i>
-      </div>
-      <h2 class="text-xl font-bold text-stone-900 font-serif">가족 인증</h2>
-      <p class="mt-1 text-xs text-stone-500">우리 가족 전용 비밀번호를 입력해주세요.</p>
-      
-      <form onsubmit="verifyPin(event)" class="mt-6 space-y-4">
-        <input 
-          type="password" 
-          id="pin-input" 
-          maxlength="8" 
-          inputmode="numeric" 
-          placeholder="PIN 번호 입력" 
-          class="w-full tracking-widest text-center text-xl font-bold py-3 px-4 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
-          autofocus
-        />
-        <p id="pin-error" class="text-xs text-rose-500 hidden font-medium">비밀번호가 올바르지 않습니다.</p>
-        <button 
-          type="submit" 
-          class="w-full py-3 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-amber-600 transition shadow-md active:scale-95"
-        >
-          추억보관소 들어가기
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- 메인 웹페이지 영역 -->
-  <div id="main-app" class="hidden">
-    <header class="sticky top-0 z-40 flex items-center justify-between border-b border-stone-200/80 bg-[#FDFBF7]/90 px-4 py-3 backdrop-blur-md md:px-8">
+  <!-- 1. 고정 상단 네비게이션 헤더 -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200 px-4 py-3 shadow-sm">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-bold tracking-tight text-stone-900 md:text-2xl font-serif">
-          우리 가족 추억보관소
-        </h1>
-        <p class="text-xs text-stone-500 hidden sm:block">함께 걸어온 소중한 시간과 이야기</p>
+        <h1 class="text-lg md:text-xl font-extrabold text-stone-900 tracking-tight">가족의 계절, 우리의 시간</h1>
+        <p class="text-[11px] text-stone-400">사진을 누르면 크게 볼 수 있습니다</p>
       </div>
-
-      <div class="flex rounded-full bg-stone-200/80 p-1 text-xs md:text-sm font-medium">
-        <button id="btn-timeline" onclick="switchView('timeline')" class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 bg-white text-stone-900 shadow-sm transition">
-          <i data-lucide="clock" class="w-4 h-4"></i>
-          <span>타임라인</span>
-        </button>
-        <button id="btn-map" onclick="switchView('map')" class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-stone-600 hover:text-stone-900 transition">
-          <i data-lucide="map" class="w-4 h-4"></i>
-          <span>지도 여행</span>
-        </button>
-      </div>
-    </header>
-
-    <main class="mx-auto max-w-5xl px-4 py-6 md:px-8">
-      <!-- 1. 타임라인 뷰 -->
-      <section id="timeline-view" class="flex flex-col md:flex-row gap-6 md:gap-8">
-        <aside id="year-nav" class="sticky top-16 z-10 flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 md:w-28 flex-shrink-0 bg-[#FDFBF7]/90 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
-          <span class="text-xs font-semibold uppercase text-stone-400 hidden md:block mb-1">탐색</span>
-        </aside>
-
-        <div id="posts-container" class="flex-1 space-y-8 md:space-y-10 border-l-2 border-amber-200/70 pl-4 md:pl-8 ml-2 md:ml-0"></div>
-      </section>
-
-      <!-- 2. 지도 여행 모드 뷰 -->
-      <section id="map-view" class="hidden flex-col gap-4">
-        <div class="relative w-full h-[540px] md:h-[600px] rounded-2xl overflow-hidden shadow-lg border border-stone-200 bg-stone-100 flex flex-col md:flex-row">
-          <div id="leaflet-map" class="relative flex-1 h-full w-full"></div>
-          <div id="map-preview-panel" class="w-full md:w-80 bg-white p-5 border-t md:border-t-0 md:border-l border-stone-200 flex flex-col justify-between hidden">
-            <div>
-              <div id="map-preview-date" class="text-xs text-amber-600 font-semibold mb-1"></div>
-              <h3 id="map-preview-title" class="font-bold text-stone-900 text-lg leading-snug"></h3>
-              <p id="map-preview-loc" class="text-xs text-stone-500 mt-1"></p>
-              <div class="mt-3 relative aspect-video rounded-xl overflow-hidden bg-stone-100">
-                <img id="map-preview-img" class="w-full h-full object-cover">
-              </div>
-              <p id="map-preview-desc" class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed"></p>
-            </div>
-            <button id="map-preview-btn" class="mt-4 w-full py-2.5 rounded-xl bg-stone-900 text-white text-xs font-semibold hover:bg-amber-600 transition shadow-sm active:scale-95">
-              넷플릭스 모드로 감상하기 →
-            </button>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- 3. 넷플릭스/OTT 상세 뷰어 -->
-  <div id="netflix-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-0 md:p-6 backdrop-blur-md hidden animate-fadeIn">
-    <button onclick="closeNetflixModal()" class="absolute top-4 right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition active:scale-90">
-      <i data-lucide="x" class="w-6 h-6"></i>
-    </button>
-
-    <div class="relative h-full w-full max-w-5xl overflow-y-auto bg-[#141414] text-white rounded-none md:rounded-3xl shadow-2xl flex flex-col">
-      <!-- 상단 메인 시네마틱 뷰어 (모바일에서 더 큼직하게 45vh 이상 확보) -->
-      <div class="relative w-full h-[45vh] md:h-[58vh] bg-black flex items-center justify-center overflow-hidden">
-        <div id="modal-player-wrap" class="w-full h-full flex items-center justify-center cursor-zoom-in"></div>
-        <div class="absolute bottom-2 right-3 pointer-events-none bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] text-stone-300 flex items-center gap-1">
-          <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
-          <span>터치 시 전체화면 확대</span>
-        </div>
-      </div>
-
-      <!-- 콘텐츠 상세 설명 & 하단 와이드 가로 슬라이더 -->
-      <div class="p-5 md:p-8 space-y-5 flex-1 bg-[#141414]">
-        <div>
-          <div id="modal-meta" class="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-400 uppercase"></div>
-          <h2 id="modal-title" class="text-xl md:text-3xl font-extrabold mt-1 text-white"></h2>
-          <p id="modal-desc" class="mt-2 text-stone-300 text-xs md:text-sm leading-relaxed max-w-3xl"></p>
-        </div>
-
-        <div class="pt-2">
-          <h4 id="modal-slider-count" class="text-xs md:text-sm font-bold text-stone-400 mb-3">모아보기</h4>
-          <div id="modal-thumbnails" class="flex gap-3 md:gap-4 overflow-x-auto pb-4 slider-touch"></div>
-        </div>
-      </div>
+      <span id="header-badge" class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1 rounded-full font-semibold"></span>
     </div>
-  </div>
 
-  <!-- 4. 전체화면 핀치 줌 / 딥 뷰어 (상단 사진 터치 시 실행) -->
-  <div id="fullscreen-lightbox" class="fixed inset-0 z-50 bg-black flex flex-col justify-between hidden">
-    <!-- 상단 툴바 -->
-    <div class="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent z-10">
-      <span id="lightbox-counter" class="text-xs font-medium text-stone-300"></span>
+    <!-- 연도 칩 바 (가로 스크롤 슬라이드, 드롭다운 없음) -->
+    <div class="max-w-6xl mx-auto mt-3 flex gap-2 overflow-x-auto no-scrollbar pb-1" id="year-chips"></div>
+
+    <!-- 이벤트 칩 바 (선택된 연도의 하위 이벤트 목록) -->
+    <div class="max-w-6xl mx-auto mt-2 flex gap-2 overflow-x-auto no-scrollbar pb-1" id="event-chips"></div>
+  </header>
+
+  <!-- 2. 메인 사진 영역 -->
+  <main class="max-w-6xl mx-auto p-3 md:p-6">
+    <!-- 이벤트 타이틀 및 AI 설명 카드 -->
+    <div class="mb-4 bg-white p-4 md:p-5 rounded-2xl border border-stone-200 shadow-sm">
       <div class="flex items-center gap-2">
-        <button onclick="zoomReset()" class="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 text-xs px-3">100%</button>
-        <button onclick="closeLightbox()" class="p-2 rounded-full bg-white/20 text-white hover:bg-white/30">
-          <i data-lucide="x" class="w-6 h-6"></i>
-        </button>
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+        <h2 class="text-base md:text-xl font-bold text-stone-900 tracking-tight" id="event-title">추억을 불러오는 중...</h2>
+      </div>
+      <p class="text-xs md:text-sm text-stone-500 mt-1.5 pl-4" id="event-desc"></p>
+    </div>
+
+    <!-- 사진 그리드 (모바일 3열 컴팩트 뷰, PC 5열 정렬) -->
+    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 md:gap-3" id="photo-grid"></div>
+  </main>
+
+  <!-- 3. 전체화면 전용 뷰어 (확대/축소 및 뒤로가기) -->
+  <div id="viewer-modal" class="fixed inset-0 z-50 bg-black hidden flex flex-col justify-between">
+    <!-- 상단 툴바 -->
+    <div class="p-4 flex items-center justify-between text-white z-10 bg-gradient-to-b from-black/80 to-transparent">
+      <!-- 뒤로가기 버튼 -->
+      <button onclick="closeViewer()" class="flex items-center gap-2 bg-white/20 hover:bg-white/30 active:scale-95 px-4 py-2 rounded-full text-sm font-semibold backdrop-blur transition">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>뒤로가기</span>
+      </button>
+
+      <!-- 줌 조절 버튼 -->
+      <div class="flex items-center gap-1.5 bg-white/20 backdrop-blur px-2 py-1 rounded-full text-xs">
+        <button onclick="zoomStep(-0.3)" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 active:scale-90"><i class="fa-solid fa-minus"></i></button>
+        <button onclick="resetZoom()" class="px-2 py-1 hover:bg-white/20 rounded-md">100%</button>
+        <button onclick="zoomStep(0.3)" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 active:scale-90"><i class="fa-solid fa-plus"></i></button>
       </div>
     </div>
 
-    <!-- 중앙 인터랙티브 줌 이미지 영역 -->
-    <div id="lightbox-viewport" class="relative flex-1 flex items-center justify-center overflow-hidden touch-pan">
-      <img id="lightbox-img" class="max-w-full max-h-full object-contain transition-transform duration-100 ease-out select-none" style="transform-origin: center center;" />
+    <!-- 사진 표시 영역 (더블탭 확대 및 드래그/핀치 줌) -->
+    <div class="flex-1 flex items-center justify-center overflow-hidden p-2 relative" id="img-container">
+      <img id="viewer-img" src="" class="zoom-img max-h-full max-w-full object-contain cursor-grab active:cursor-grabbing" alt="확대 사진">
     </div>
 
-    <!-- 하단 안내 -->
-    <div class="p-3 text-center text-[11px] text-stone-400 bg-gradient-to-t from-black/80 to-transparent">
-      두 손가락으로 확대/축소하거나 더블 탭하세요
+    <!-- 하단 도움말 바 -->
+    <div class="p-3 text-center text-[11px] text-white/60 bg-gradient-to-t from-black/80 to-transparent">
+      화면을 두 번 연속 터치하면 확대되며, 좌측 상단 [뒤로가기]를 누르면 목록으로 돌아갑니다
     </div>
   </div>
+
+  <!-- data.js 연동 -->
+  <script src="data.js"></script>
 
   <script>
-    const FAMILY_PIN = "1216";
-
-    let activePost = null;
-    let currentMedia = null;
-    let leafletMap = null;
-    let markersLayer = null;
-
-    // 핀치 줌 관련 변수
+    let currentYIdx = 0;
+    let currentMIdx = 0;
     let scale = 1;
-    let lastDistance = null;
+    let panX = 0, panY = 0;
+    let startX = 0, startY = 0;
+    let isDragging = false;
+    let initialDistance = null;
 
-    function verifyPin(e) {
-      e.preventDefault();
-      const val = document.getElementById('pin-input').value;
-      if (val === FAMILY_PIN) {
-        sessionStorage.setItem('family_auth', 'true');
-        unlockSite();
-      } else {
-        document.getElementById('pin-error').classList.remove('hidden');
-      }
-    }
-
-    function unlockSite() {
-      document.getElementById('pin-screen').classList.add('hidden');
-      document.getElementById('main-app').classList.remove('hidden');
-      initPage();
-    }
-
-    function checkAuth() {
-      if (sessionStorage.getItem('family_auth') === 'true') {
-        unlockSite();
-      } else {
-        lucide.createIcons();
-      }
-    }
-
-    function initPage() {
-      if (typeof memoriesData === 'undefined' || !memoriesData || memoriesData.length === 0) {
-        alert("data.js 데이터를 찾을 수 없습니다.");
+    function init() {
+      if (typeof GALLERY_DATA === 'undefined' || !GALLERY_DATA.length) {
+        document.getElementById('event-title').innerText = 'data.js를 읽어오지 못했습니다.';
         return;
       }
-      renderTimeline();
-      initMap();
-      setupZoomTouch();
-      lucide.createIcons();
+      renderYears();
+      selectYear(0);
     }
 
-    function renderTimeline() {
-      const postsContainer = document.getElementById('posts-container');
-      const yearNav = document.getElementById('year-nav');
-      postsContainer.innerHTML = '';
-      yearNav.innerHTML = '<span class="text-xs font-semibold uppercase text-stone-400 hidden md:block mb-1">탐색</span>';
-
-      const categories = [...new Set(memoriesData.map(m => m.year))];
-
-      categories.forEach(cat => {
-        const a = document.createElement('a');
-        a.href = `#sec-${cat}`;
-        a.className = "rounded-lg px-3 py-1.5 text-center text-xs font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 transition whitespace-nowrap";
-        a.innerText = typeof cat === 'number' ? `${cat}년` : cat;
-        yearNav.appendChild(a);
-      });
-
-      memoriesData.forEach(post => {
-        const card = document.createElement('article');
-        card.id = `sec-${post.year}`;
-        card.className = "group relative cursor-pointer rounded-2xl bg-white p-4 md:p-6 shadow-sm ring-1 ring-stone-900/5 transition hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]";
-        card.onclick = () => openNetflixModal(post);
-
-        const isVideo = post.coverMedia && post.coverMedia.type === 'video';
-
-        card.innerHTML = `
-          <div class="absolute -left-[25px] md:-left-[41px] top-6 h-4 w-4 rounded-full border-4 border-[#FDFBF7] bg-amber-500 shadow-sm"></div>
-          <div class="flex flex-wrap items-center gap-2 md:gap-3 text-xs text-stone-500 mb-2">
-            <span class="bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-              <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${post.date}
-            </span>
-            <span class="flex items-center gap-1">
-              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-stone-400"></i> ${post.location.name}
-            </span>
-          </div>
-          <h3 class="text-lg md:text-xl font-bold text-stone-900 group-hover:text-amber-600 transition">${post.title}</h3>
-          <p class="mt-1 text-xs md:text-sm text-stone-600 line-clamp-2">${post.description}</p>
-          <div class="relative mt-3 md:mt-4 aspect-video md:aspect-[21/9] w-full overflow-hidden rounded-xl bg-stone-100">
-            <img src="${post.coverMedia.thumbnailUrl}" class="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy">
-            ${isVideo ? `
-              <div class="absolute inset-0 flex items-center justify-center bg-black/25">
-                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-stone-900 shadow-lg">
-                  <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
-                </div>
-              </div>` : ''}
-          </div>
-          <div class="mt-3 flex items-center justify-between text-xs text-stone-400">
-            <span>미디어 ${post.mediaList.length}개</span>
-            <span class="font-semibold text-amber-700 group-hover:underline">넷플릭스 모드로 감상하기 →</span>
-          </div>
-        `;
-        postsContainer.appendChild(card);
+    // 연도 칩 렌더링
+    function renderYears() {
+      const el = document.getElementById('year-chips');
+      el.innerHTML = '';
+      GALLERY_DATA.forEach((item, idx) => {
+        const btn = document.createElement('button');
+        btn.id = `y-btn-${idx}`;
+        btn.className = `px-4 py-1.5 rounded-full text-xs md:text-sm font-bold whitespace-nowrap transition active:scale-95 ${
+          idx === 0 ? 'bg-stone-900 text-white shadow' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+        }`;
+        btn.innerText = `${item.year}년`;
+        btn.onclick = () => selectYear(idx);
+        el.appendChild(btn);
       });
     }
 
-    function openNetflixModal(post) {
-      activePost = post;
-      const metaText = typeof post.year === 'number' 
-        ? `${post.year}년 • ${post.location.name}` 
-        : `${post.location.name}`;
-      
-      document.getElementById('modal-meta').innerText = metaText;
-      document.getElementById('modal-title').innerText = post.title;
-      document.getElementById('modal-desc').innerText = post.description;
-      document.getElementById('modal-slider-count').innerText = `모아보기 (${post.mediaList.length})`;
-
-      renderActiveMedia(post.coverMedia);
-
-      const thumbContainer = document.getElementById('modal-thumbnails');
-      thumbContainer.innerHTML = '';
-
-      post.mediaList.forEach(m => {
-        const item = document.createElement('div');
-        item.className = "relative flex-shrink-0 cursor-pointer overflow-hidden rounded-xl transition transform duration-200 hover:scale-105 active:scale-95 ring-1 ring-white/10 shadow-lg";
-        item.style.width = "170px";
-        item.style.height = "105px";
-        item.onclick = (e) => { e.stopPropagation(); renderActiveMedia(m); };
-        item.innerHTML = `
-          <img src="${m.thumbnailUrl}" class="w-full h-full object-cover" loading="lazy">
-          <div class="absolute bottom-1.5 right-1.5 rounded-md bg-black/70 p-1 text-white text-[10px]">
-            ${m.type === 'video' ? '<i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>' : '<i data-lucide="image" class="w-3.5 h-3.5"></i>'}
-          </div>
-        `;
-        thumbContainer.appendChild(item);
+    function selectYear(yIdx) {
+      currentYIdx = yIdx;
+      GALLERY_DATA.forEach((_, idx) => {
+        const b = document.getElementById(`y-btn-${idx}`);
+        if (b) b.className = `px-4 py-1.5 rounded-full text-xs md:text-sm font-bold whitespace-nowrap transition active:scale-95 ${
+          idx === yIdx ? 'bg-stone-900 text-white shadow' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+        }`;
       });
-
-      document.getElementById('netflix-modal').classList.remove('hidden');
-      lucide.createIcons();
+      renderEvents(yIdx);
+      selectEvent(0);
     }
 
-    function renderActiveMedia(media) {
-      currentMedia = media;
-      const wrap = document.getElementById('modal-player-wrap');
-      if (media.type === 'video') {
-        wrap.onclick = null;
-        wrap.innerHTML = `<iframe src="${media.url}" class="w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
-      } else {
-        wrap.onclick = () => openLightbox(media);
-        wrap.innerHTML = `<img src="${media.url}" class="max-h-full max-w-full object-contain pointer-events-none">`;
+    // 이벤트 칩 렌더링
+    function renderEvents(yIdx) {
+      const el = document.getElementById('event-chips');
+      el.innerHTML = '';
+      const months = GALLERY_DATA[yIdx].months;
+
+      months.forEach((m, idx) => {
+        const btn = document.createElement('button');
+        btn.id = `e-btn-${idx}`;
+        btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition border active:scale-95 ${
+          idx === 0 ? 'bg-amber-600 border-amber-600 text-white shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+        }`;
+        btn.innerText = `${m.title} (${m.month})`;
+        btn.onclick = () => selectEvent(idx);
+        el.appendChild(btn);
+      });
+    }
+
+    function selectEvent(mIdx) {
+      currentMIdx = mIdx;
+      const data = GALLERY_DATA[currentYIdx].months[mIdx];
+
+      GALLERY_DATA[currentYIdx].months.forEach((_, idx) => {
+        const b = document.getElementById(`e-btn-${idx}`);
+        if (b) b.className = `px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition border active:scale-95 ${
+          idx === mIdx ? 'bg-amber-600 border-amber-600 text-white shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+        }`;
+      });
+
+      document.getElementById('event-title').innerText = data.title;
+      document.getElementById('event-desc').innerText = `${data.desc} · 총 ${data.photos.length}장`;
+      document.getElementById('header-badge').innerText = `${data.photos.length}장의 사진`;
+
+      const grid = document.getElementById('photo-grid');
+      grid.innerHTML = data.photos.map(p => `
+        <div class="aspect-square bg-stone-200 rounded-lg md:rounded-xl overflow-hidden shadow-sm active:scale-95 cursor-pointer relative group" onclick="openViewer('${p.url}')">
+          <img src="${p.url}" alt="${p.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+        </div>
+      `).join('');
+    }
+
+    // 뷰어 제어 로직
+    const modal = document.getElementById('viewer-modal');
+    const vImg = document.getElementById('viewer-img');
+
+    function openViewer(url) {
+      resetZoom();
+      vImg.src = url;
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      // 브라우저 뒤로가기 버튼(히스토리) 대응
+      history.pushState({ viewerOpen: true }, '');
+    }
+
+    function closeViewer() {
+      modal.classList.add('hidden');
+      vImg.src = '';
+      document.body.style.overflow = '';
+      resetZoom();
+      if (history.state && history.state.viewerOpen) {
+        history.back();
       }
     }
 
-    function closeNetflixModal() {
-      document.getElementById('netflix-modal').classList.add('hidden');
-      document.getElementById('modal-player-wrap').innerHTML = '';
-    }
-
-    // 4. 전체화면 핀치 줌 라이트박스 로직
-    function openLightbox(media) {
-      if (!media || media.type === 'video') return;
-      scale = 1;
-      const lb = document.getElementById('fullscreen-lightbox');
-      const img = document.getElementById('lightbox-img');
-      img.src = media.url;
-      img.style.transform = `scale(1)`;
-      document.getElementById('lightbox-counter').innerText = media.name || '가족 사진';
-      lb.classList.remove('hidden');
-      lucide.createIcons();
-    }
-
-    function closeLightbox() {
-      document.getElementById('fullscreen-lightbox').classList.add('hidden');
-      scale = 1;
-    }
-
-    function zoomReset() {
-      scale = 1;
-      document.getElementById('lightbox-img').style.transform = `scale(1)`;
-    }
-
-    function setupZoomTouch() {
-      const viewport = document.getElementById('lightbox-viewport');
-      const img = document.getElementById('lightbox-img');
-
-      // 더블 탭 확대
-      let lastTap = 0;
-      viewport.addEventListener('touchend', (e) => {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        if (tapLength < 300 && tapLength > 0) {
-          scale = scale > 1 ? 1 : 2.2;
-          img.style.transform = `scale(${scale})`;
-          e.preventDefault();
-        }
-        lastTap = currentTime;
-      });
-
-      // 멀티 터치 핀치 줌
-      viewport.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2) {
-          const dist = Math.hypot(
-            e.touches[0].pageX - e.touches[1].pageX,
-            e.touches[0].pageY - e.touches[1].pageY
-          );
-          if (lastDistance) {
-            const diff = dist - lastDistance;
-            scale = Math.min(Math.max(1, scale + diff * 0.008), 4);
-            img.style.transform = `scale(${scale})`;
-          }
-          lastDistance = dist;
-        }
-      });
-
-      viewport.addEventListener('touchend', () => { lastDistance = null; });
-    }
-
-    function switchView(mode) {
-      const btnT = document.getElementById('btn-timeline');
-      const btnM = document.getElementById('btn-map');
-      const viewT = document.getElementById('timeline-view');
-      const viewM = document.getElementById('map-view');
-
-      if (mode === 'timeline') {
-        btnT.className = "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 bg-white text-stone-900 shadow-sm transition";
-        btnM.className = "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-stone-600 hover:text-stone-900 transition";
-        viewT.classList.remove('hidden');
-        viewM.classList.add('hidden');
-      } else {
-        btnM.className = "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 bg-white text-stone-900 shadow-sm transition";
-        btnT.className = "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-stone-600 hover:text-stone-900 transition";
-        viewM.classList.remove('hidden');
-        viewT.classList.add('hidden');
-        setTimeout(() => leafletMap.invalidateSize(), 200);
+    // 브라우저 자체 '뒤로가기' 키나 제스처 시 모달 닫기
+    window.onpopstate = function() {
+      if (!modal.classList.contains('hidden')) {
+        modal.classList.add('hidden');
+        vImg.src = '';
+        document.body.style.overflow = '';
       }
+    };
+
+    function updateTransform() {
+      vImg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
     }
 
-    function initMap() {
-      leafletMap = L.map('leaflet-map').setView([18.0, 115.0], 4);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-      }).addTo(leafletMap);
-
-      markersLayer = L.layerGroup().addTo(leafletMap);
-
-      memoriesData.forEach(post => {
-        const customIcon = L.divIcon({
-          className: 'custom-pin',
-          html: `<div style="width:40px;height:40px;border-radius:50%;border:2px solid #d97706;box-shadow:0 2px 8px rgba(0,0,0,0.3);overflow:hidden;background:#000;">
-                  <img src="${post.coverMedia.thumbnailUrl}" style="width:100%;height:100%;object-fit:cover;">
-                 </div>`,
-          iconSize: [40, 40]
-        });
-
-        const marker = L.marker([post.location.lat, post.location.lng], { icon: customIcon });
-        marker.on('click', () => showMapPreview(post));
-        markersLayer.addLayer(marker);
-      });
+    function zoomStep(val) {
+      scale = Math.min(Math.max(1, scale + val), 4);
+      if (scale === 1) { panX = 0; panY = 0; }
+      updateTransform();
     }
 
-    function showMapPreview(post) {
-      const p = document.getElementById('map-preview-panel');
-      p.classList.remove('hidden');
-      document.getElementById('map-preview-date').innerText = post.date;
-      document.getElementById('map-preview-title').innerText = post.title;
-      document.getElementById('map-preview-loc').innerText = `📍 ${post.location.name}`;
-      document.getElementById('map-preview-img').src = post.coverMedia.thumbnailUrl;
-      document.getElementById('map-preview-desc').innerText = post.description;
-      document.getElementById('map-preview-btn').onclick = () => openNetflixModal(post);
+    function resetZoom() {
+      scale = 1;
+      panX = 0;
+      panY = 0;
+      updateTransform();
     }
 
-    window.onload = checkAuth;
+    // 더블 탭 확대
+    let lastTouchTime = 0;
+    vImg.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTouchTime < 300) {
+        scale = scale > 1 ? 1 : 2.2;
+        panX = 0; panY = 0;
+        updateTransform();
+      }
+      lastTouchTime = now;
+    });
+
+    // 드래그 및 핀치 줌 처리
+    const container = document.getElementById('img-container');
+    
+    container.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        initialDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      } else if (e.touches.length === 1 && scale > 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - panX;
+        startY = e.touches[0].clientY - panY;
+      }
+    });
+
+    container.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && initialDistance) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const factor = dist / initialDistance;
+        scale = Math.min(Math.max(1, scale * factor), 4);
+        initialDistance = dist;
+        updateTransform();
+      } else if (e.touches.length === 1 && isDragging) {
+        panX = e.touches[0].clientX - startX;
+        panY = e.touches[0].clientY - startY;
+        updateTransform();
+      }
+    });
+
+    container.addEventListener('touchend', () => {
+      isDragging = false;
+      initialDistance = null;
+      if (scale <= 1) { panX = 0; panY = 0; updateTransform(); }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeViewer();
+      }
+    });
+
+    window.onload = init;
   </script>
 </body>
 </html>
