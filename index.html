@@ -55,7 +55,7 @@
     </div>
   </div>
 
-  <!-- 메인 웹 서비스 컨테이너 (인증 전 숨김) -->
+  <!-- 메인 웹 서비스 컨테이너 -->
   <div id="main-app" class="hidden">
     <!-- 상단 헤더 -->
     <header class="sticky top-0 z-40 flex items-center justify-between border-b border-white/10 bg-[#141414]/90 px-4 py-3 backdrop-blur-md md:px-8">
@@ -125,31 +125,40 @@
     </main>
   </div>
 
-  <!-- [4단계] 전체 화면 시네마틱 이머시브 뷰어 -->
-  <div id="step-4" class="fixed inset-0 z-50 bg-black flex flex-col justify-between hidden select-none">
-    <div id="viewer-header" class="relative z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent transition duration-300">
+  <!-- [4단계] 전체 화면 시네마틱 이머시브 뷰어 (확대/축소 지원) -->
+  <div id="step-4" class="fixed inset-0 z-50 bg-black flex flex-col justify-between hidden select-none touch-none">
+    <!-- 상단 바 -->
+    <div id="viewer-header" class="relative z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent transition duration-300">
       <div class="space-y-0.5">
         <h5 id="viewer-photo-title" class="text-sm font-bold text-white"></h5>
         <p id="viewer-photo-index" class="text-[11px] text-stone-400"></p>
       </div>
-      <button onclick="closeViewer()" class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition active:scale-95">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="resetZoom()" id="btn-zoom-reset" class="hidden text-xs bg-white/10 hover:bg-white/20 text-stone-300 px-2.5 py-1.5 rounded-full transition">
+          100% 리셋
+        </button>
+        <button onclick="closeViewer()" class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition active:scale-95">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
     </div>
 
-    <div class="relative flex-1 flex items-center justify-center overflow-hidden px-2" onclick="toggleViewerControls()">
-      <button onclick="event.stopPropagation(); prevPhoto();" class="absolute left-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition active:scale-90">
+    <!-- 중앙 인터랙티브 뷰어 영역 -->
+    <div id="viewer-container" class="relative flex-1 flex items-center justify-center overflow-hidden px-2">
+      <button onclick="event.stopPropagation(); prevPhoto();" class="absolute left-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition active:scale-90">
         <i data-lucide="chevron-left" class="w-6 h-6"></i>
       </button>
 
-      <img id="viewer-img" class="max-h-full max-w-full object-contain transition duration-200" alt="가족 사진">
+      <!-- 확대/축소/이동 대상 이미지 -->
+      <img id="viewer-img" class="max-h-full max-w-full object-contain cursor-grab active:cursor-grabbing will-change-transform" alt="가족 사진">
 
-      <button onclick="event.stopPropagation(); nextPhoto();" class="absolute right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition active:scale-90">
+      <button onclick="event.stopPropagation(); nextPhoto();" class="absolute right-3 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition active:scale-90">
         <i data-lucide="chevron-right" class="w-6 h-6"></i>
       </button>
     </div>
 
-    <div id="viewer-footer" class="relative z-10 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition duration-300">
+    <!-- 하단 썸네일 스트립 바 -->
+    <div id="viewer-footer" class="relative z-20 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition duration-300">
       <div id="viewer-filmstrip" class="flex gap-2 overflow-x-auto pb-1 slider-touch"></div>
     </div>
   </div>
@@ -164,7 +173,7 @@
     let currentPhotoIndex = 0;
     let controlsVisible = true;
 
-    // PIN 번호 검증 로직
+    // PIN 번호 검증
     function verifyPin(e) {
       e.preventDefault();
       const input = document.getElementById("pin-input").value;
@@ -320,7 +329,7 @@
       lucide.createIcons();
     }
 
-    // [4단계] 시네마틱 이머시브 뷰어
+    // [4단계] 뷰어 열기
     function openHeroToViewer() {
       if (currentPhotoList.length > 0) openViewer(0);
     }
@@ -328,6 +337,7 @@
     function openViewer(index) {
       currentPhotoIndex = index;
       document.getElementById("step-4").classList.remove("hidden");
+      resetZoom();
       renderViewerPhoto();
       renderFilmstrip();
       lucide.createIcons();
@@ -335,9 +345,11 @@
 
     function renderViewerPhoto() {
       const p = currentPhotoList[currentPhotoIndex];
-      document.getElementById("viewer-img").src = p.url;
+      const img = document.getElementById("viewer-img");
+      img.src = p.url;
       document.getElementById("viewer-photo-title").innerText = p.name || '가족 사진';
       document.getElementById("viewer-photo-index").innerText = `${currentPhotoIndex + 1} / ${currentPhotoList.length}`;
+      resetZoom();
       highlightFilmstrip();
     }
 
@@ -386,6 +398,7 @@
     }
 
     function closeViewer() {
+      resetZoom();
       document.getElementById("step-4").classList.add("hidden");
     }
 
@@ -424,18 +437,133 @@
       else backBtn.classList.add("hidden");
     }
 
-    // 제스처 스와이프
+    // ============================================================
+    // [단계 4 전용] 사진 정밀 확대/축소 및 이동(Pan/Zoom) 엔진
+    // ============================================================
+    let scale = 1;
+    let posX = 0;
+    let posY = 0;
+    let startX = 0;
+    let startY = 0;
+    let isDragging = false;
+    let initialDistance = 0;
+    let initialScale = 1;
+    let lastTapTime = 0;
+
+    const imgEl = document.getElementById("viewer-img");
+    const containerEl = document.getElementById("viewer-container");
+    const zoomResetBtn = document.getElementById("btn-zoom-reset");
+
+    function updateTransform(smooth = false) {
+      imgEl.style.transition = smooth ? "transform 0.2s ease-out" : "none";
+      imgEl.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+      
+      if (scale > 1.05) {
+        zoomResetBtn.classList.remove("hidden");
+      } else {
+        zoomResetBtn.classList.add("hidden");
+      }
+    }
+
+    function resetZoom() {
+      scale = 1;
+      posX = 0;
+      posY = 0;
+      updateTransform(true);
+    }
+
+    // 1. 마우스 휠 줌 (PC)
+    containerEl.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const zoomFactor = 0.15;
+      if (e.deltaY < 0) {
+        scale = Math.min(scale + zoomFactor, 4.0);
+      } else {
+        scale = Math.max(scale - zoomFactor, 1.0);
+      }
+      if (scale === 1) { posX = 0; posY = 0; }
+      updateTransform();
+    }, { passive: false });
+
+    // 2. 더블 탭 / 더블 클릭 줌 (2.5배 확대 및 원복)
+    containerEl.addEventListener("click", (e) => {
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        if (scale > 1.2) {
+          resetZoom();
+        } else {
+          scale = 2.5;
+          posX = 0;
+          posY = 0;
+          updateTransform(true);
+        }
+      } else {
+        if (scale === 1 && e.target === containerEl) {
+          toggleViewerControls();
+        }
+      }
+      lastTapTime = now;
+    });
+
+    // 3. 터치 핀치 줌 & 드래그 이동 (아이패드/모바일)
+    containerEl.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 2) {
+        initialDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialScale = scale;
+      } else if (e.touches.length === 1) {
+        startX = e.touches[0].clientX - posX;
+        startY = e.touches[0].clientY - posY;
+        isDragging = true;
+      }
+    }, { passive: true });
+
+    containerEl.addEventListener("touchmove", (e) => {
+      if (e.touches.length === 2) {
+        const currentDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        if (initialDistance > 0) {
+          scale = Math.min(Math.max(initialScale * (currentDist / initialDistance), 1.0), 4.5);
+          updateTransform();
+        }
+      } else if (e.touches.length === 1 && isDragging) {
+        if (scale > 1.05) {
+          posX = e.touches[0].clientX - startX;
+          posY = e.touches[0].clientY - startY;
+          updateTransform();
+        }
+      }
+    }, { passive: true });
+
+    containerEl.addEventListener("touchend", (e) => {
+      if (e.touches.length < 2) initialDistance = 0;
+      if (e.touches.length === 0) {
+        isDragging = false;
+        if (scale < 1.05) resetZoom();
+      }
+    });
+
+    // 4. 확대되지 않은 기본 상태에서의 좌우 스와이프 사진 넘기기
     let touchStartX = 0;
     let touchEndX = 0;
     const vArea = document.getElementById("step-4");
-    vArea.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+    vArea.addEventListener('touchstart', e => {
+      if (scale <= 1.05) touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    
     vArea.addEventListener('touchend', e => {
-      touchEndX = e.changedTouches[0].screenX;
-      if (touchStartX - touchEndX > 50) nextPhoto();
-      if (touchEndX - touchStartX > 50) prevPhoto();
+      if (scale <= 1.05) {
+        touchEndX = e.changedTouches[0].screenX;
+        if (touchStartX - touchEndX > 60) nextPhoto();
+        if (touchEndX - touchStartX > 60) prevPhoto();
+      }
     }, { passive: true });
 
-    // 키보드 내비게이션
+    // PC 키보드 단축키
     window.addEventListener('keydown', (e) => {
       const viewer = document.getElementById("step-4");
       if (!viewer.classList.contains("hidden")) {
