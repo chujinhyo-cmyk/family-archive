@@ -2,557 +2,430 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>가족 사진첩</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>우리 가족 추억보관소</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: #F5F0E6;
-      color: #3C322B;
-      font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", dotum, sans-serif;
-      min-height: 100vh;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /* ------------------------------
-       [공통 및 PC 헤더]
-    ------------------------------ */
-    header {
-      background-color: #FFF8F0;
-      border-bottom: 1px solid #D2B48C;
-      padding: 16px 20px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .header-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .pc-title {
-      font-size: 24px;
-      color: #4A2E1A;
-      margin-bottom: 14px;
-      font-weight: 800;
-    }
-    .mobile-top-bar {
-      display: none;
-    }
-    .year-bar {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-    .year-bar::-webkit-scrollbar { display: none; }
-    .year-btn {
-      background-color: #EADDCA;
-      color: #4A2E1A;
-      border: 1px solid #D2B48C;
-      padding: 6px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: 0.2s;
-    }
-    .year-btn:hover { background-color: #dcc8b0; }
-    .year-btn.active {
-      background-color: #4A2E1A;
-      color: #FFFFFF;
-      border-color: #4A2E1A;
-    }
-
-    /* ------------------------------
-       [PC 본문 타임라인 레이아웃 (유지)]
-    ------------------------------ */
-    main {
-      max-width: 1200px;
-      margin: 24px auto;
-      padding: 0 16px;
-    }
-    .month-section {
-      background: #FFFFFF;
-      border: 1px solid #D2B48C;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 24px;
-      display: flex;
-      gap: 24px;
-      align-items: flex-start;
-      box-shadow: 0 2px 8px rgba(74, 46, 26, 0.05);
-    }
-    .folder-cover-wrap {
-      flex: 0 0 320px;
-      max-width: 100%;
-      background: #FFF8F0;
-      border: 2px solid #D2B48C;
-      border-radius: 12px;
-      padding: 12px;
-    }
-    .folder-cover-img {
-      width: 100%;
-      height: 240px;
-      object-fit: cover;
-      border-radius: 8px;
-      display: block;
-      background-color: #eee;
-    }
-    .folder-title {
-      font-size: 17px;
-      font-weight: 800;
-      color: #4A2E1A;
-      margin-top: 10px;
-    }
-    .folder-desc {
-      font-size: 13px;
-      color: #7A7269;
-      margin-top: 4px;
-    }
-    .photo-grid-wrap {
-      flex: 1;
-      width: 100%;
-    }
-    .photo-grid-header {
-      font-size: 13px;
-      color: #7A7269;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .photo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-      gap: 8px;
-      background: #EADDCA;
-      padding: 12px;
-      border-radius: 12px;
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    .thumb-item {
-      aspect-ratio: 1 / 1;
-      border-radius: 6px;
-      overflow: hidden;
-      cursor: pointer;
-      background: #000;
-      transition: transform 0.15s;
-    }
-    .thumb-item:hover { transform: scale(1.05); }
-    .thumb-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    /* ------------------------------
-       [휴대폰 모바일 화면 전용 디자인 (시안 반영)]
-    ------------------------------ */
-    @media (max-width: 768px) {
-      body { background-color: #FFFFFF; }
-      header {
-        padding: 10px 14px;
-        background-color: #FFFFFF;
-        border-bottom: 1px solid #EEEEEE;
-      }
-      .pc-title { display: none; }
-      .mobile-top-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 10px;
-      }
-      .mobile-icon-btn {
-        font-size: 20px;
-        color: #333333;
-        background: none;
-        border: none;
-        cursor: pointer;
-        line-height: 1;
-      }
-      .mobile-page-title {
-        font-size: 18px;
-        font-weight: bold;
-        color: #222222;
-        letter-spacing: -0.5px;
-      }
-
-      /* 첨부 이미지 상단 Year [2020] [2021] 텍스트 바 */
-      .year-bar {
-        gap: 4px;
-        align-items: center;
-      }
-      .year-bar::before {
-        content: "Year ";
-        font-weight: 800;
-        font-size: 13px;
-        color: #111111;
-        margin-right: 2px;
-        white-space: nowrap;
-      }
-      .year-btn {
-        background: transparent !important;
-        border: none !important;
-        padding: 2px 4px !important;
-        font-size: 13px !important;
-        font-weight: normal !important;
-        color: #666666 !important;
-        border-radius: 0 !important;
-      }
-      .year-btn::before { content: "["; }
-      .year-btn::after { content: "]"; }
-      .year-btn.active {
-        color: #000000 !important;
-        font-weight: 800 !important;
-      }
-
-      /* 모바일 본문: 3열 세로 직사각형 카드 레이아웃 */
-      main {
-        margin: 10px auto;
-        padding: 0 8px;
-      }
-      .month-section {
-        background: transparent;
-        border: none;
-        padding: 0;
-        margin-bottom: 18px;
-        display: block;
-        box-shadow: none;
-      }
-      .folder-cover-wrap { display: none; } /* 모바일에서는 통합 바둑판 표시 */
-      .photo-grid-header {
-        font-size: 12px;
-        color: #444444;
-        margin-bottom: 6px;
-        padding-left: 2px;
-        font-weight: 700;
-      }
-      .photo-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 6px;
-        background: transparent;
-        padding: 0;
-        max-height: none;
-        overflow-y: visible;
-      }
-      .thumb-item {
-        aspect-ratio: 9 / 14; /* 첨부 이미지의 세로형 모바일 카드 비율 */
-        border-radius: 12px;
-        position: relative;
-      }
-      .thumb-item:hover { transform: none; }
-      /* 모바일 카드 상단 월 뱃지 라벨 */
-      .thumb-item::after {
-        content: attr(data-month);
-        position: absolute;
-        top: 6px;
-        left: 6px;
-        color: #FFFFFF;
-        font-size: 9px;
-        font-weight: 700;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-    }
-
-    /* ------------------------------
-       [전체화면 뷰어 (PC/모바일 공통 유지)]
-    ------------------------------ */
-    #viewer-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background-color: rgba(0, 0, 0, 0.95);
-      z-index: 999;
-      flex-direction: column;
-      user-select: none;
-    }
-    #viewer-modal.active { display: flex; }
-    .viewer-header {
-      padding: 14px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #FFF;
-      background: rgba(0, 0, 0, 0.4);
-    }
-    .viewer-info-title { font-size: 15px; font-weight: bold; }
-    .viewer-info-sub { font-size: 12px; color: #AAA; margin-top: 2px; }
-    .viewer-close {
-      font-size: 28px;
-      cursor: pointer;
-      color: #FFF;
-      line-height: 1;
-      padding: 0 8px;
-    }
-    .viewer-body {
-      flex: 1;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-    #viewer-img {
-      max-width: 92%;
-      max-height: 85vh;
-      object-fit: contain;
-      border-radius: 6px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
-    }
-    .nav-zone {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 50%;
-      cursor: pointer;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-    }
-    .nav-zone.left {
-      left: 0;
-      justify-content: flex-start;
-      padding-left: 20px;
-    }
-    .nav-zone.right {
-      right: 0;
-      justify-content: flex-end;
-      padding-right: 20px;
-    }
-    .nav-arrow {
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 44px;
-      font-weight: bold;
-      transition: 0.2s;
-    }
-    .nav-zone:hover .nav-arrow { color: rgba(255, 255, 255, 0.9); }
-    .viewer-footer {
-      padding: 12px;
-      text-align: center;
-      color: #888;
-      font-size: 12px;
-      background: rgba(0, 0, 0, 0.4);
-    }
+    /* 스크롤바 커스텀 */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    .slider-touch::-webkit-scrollbar { display: none; }
+    .slider-touch { -ms-overflow-style: none; scrollbar-width: none; }
+    /* 터치 인터랙션 최적화 */
+    img { -webkit-user-drag: none; user-select: none; }
   </style>
 </head>
-<body>
+<body class="bg-[#141414] text-stone-200 antialiased min-h-screen selection:bg-amber-600 selection:text-white pb-12">
 
-  <!-- 상단 네비게이션 -->
-  <header>
-    <div class="header-inner">
-      <!-- PC 전용 타이틀 -->
-      <h1 class="pc-title">가족 사진첩</h1>
-
-      <!-- 모바일 전용 앱 스타일 상단 바 -->
-      <div class="mobile-top-bar">
-        <button class="mobile-icon-btn">&#9776;</button>
-        <span class="mobile-page-title">가족 사진첩</span>
-        <button class="mobile-icon-btn">&#9906;</button>
+  <!-- 상단 공통 헤더 및 내비게이션 바 -->
+  <header class="sticky top-0 z-40 flex items-center justify-between border-b border-white/10 bg-[#141414]/90 px-4 py-3 backdrop-blur-md md:px-8">
+    <div class="flex items-center gap-3">
+      <button id="btn-back" onclick="navigateBack()" class="hidden flex h-9 w-9 items-center justify-center rounded-full bg-stone-800 text-stone-300 hover:text-white transition active:scale-95">
+        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+      </button>
+      <div>
+        <h1 id="header-title" class="text-base md:text-lg font-bold text-white tracking-wide font-serif">우리 가족 추억보관소</h1>
+        <p id="header-subtitle" class="text-[11px] text-stone-400">함께 걸어온 소중한 시간과 이야기</p>
       </div>
-
-      <!-- 연도 바 (PC: 알약 버튼 / 모바일: Year [2026] 형태) -->
-      <div class="year-bar" id="year-bar"></div>
+    </div>
+    
+    <div class="flex items-center gap-2 text-xs text-amber-500/90 font-medium bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20">
+      <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+      <span id="current-step-label">1단계: 연도별</span>
     </div>
   </header>
 
-  <!-- 메인 사진/폴더 컨텐츠 영역 -->
-  <main id="timeline-container"></main>
+  <!-- 메인 컨테이너 -->
+  <main class="mx-auto max-w-4xl px-4 py-6 md:px-8">
 
-  <!-- 전체화면 뷰어 -->
-  <div id="viewer-modal">
-    <div class="viewer-header">
-      <div>
-        <div class="viewer-info-title" id="v-title"></div>
-        <div class="viewer-info-sub" id="v-sub"></div>
+    <!-- [1단계] 메인 화면: 연도별 다크 모드 갤러리 (2열 카드 그리드) -->
+    <section id="step-1" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold tracking-wider text-stone-400 uppercase">연도별 앨범 탐색</h2>
+        <span class="text-xs text-stone-500">원하는 연도를 선택하세요</span>
       </div>
-      <div class="viewer-close" onclick="closeViewer()">&times;</div>
+      <div id="year-grid" class="grid grid-cols-2 gap-3 md:gap-5"></div>
+    </section>
+
+    <!-- [2단계] 연도 폴더 클릭 시: 월별 모자이크 폴더 (C안) -->
+    <section id="step-2" class="hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 id="step2-year-title" class="text-xl md:text-2xl font-bold text-white font-serif"></h2>
+          <p class="text-xs text-stone-400 mt-0.5">월별 추억을 선택해 감상하세요</p>
+        </div>
+      </div>
+      <div id="month-mosaic-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3 auto-rows-[160px] md:auto-rows-[180px]"></div>
+    </section>
+
+    <!-- [3단계] 월 폴더 클릭 시: 시네마틱 히어로 배너 + 모자이크 사진 목록 -->
+    <section id="step-3" class="hidden space-y-6">
+      <!-- 상단 히어로 와이드 배너 -->
+      <div class="relative w-full h-[36vh] md:h-[45vh] bg-stone-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10 group cursor-pointer" onclick="openHeroToViewer()">
+        <img id="hero-img" class="w-full h-full object-cover brightness-90 group-hover:scale-105 transition duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-[#141414] via-black/20 to-transparent"></div>
+        <div class="absolute bottom-4 left-4 right-4 md:left-6 md:bottom-6 space-y-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-400/30">MONTHLY HIGHLIGHT</span>
+          <h3 id="hero-title" class="text-xl md:text-2xl font-black text-white drop-shadow-md"></h3>
+          <p id="hero-desc" class="text-xs text-stone-300 drop-shadow line-clamp-1"></p>
+        </div>
+      </div>
+
+      <!-- 모자이크 사진 목록 -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-semibold text-stone-300 flex items-center gap-2">
+            <span class="w-1.5 h-3.5 bg-amber-500 rounded-full inline-block"></span>
+            사진 및 영상 모아보기
+          </h4>
+          <span id="photo-count-badge" class="text-xs text-stone-500"></span>
+        </div>
+        <div id="photo-mosaic-grid" class="grid grid-cols-2 md:grid-cols-3 gap-2.5 auto-rows-[140px] md:auto-rows-[160px]"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- [4단계] 사진 선택 시: 전체 화면 시네마틱 이머시브 뷰어 -->
+  <div id="step-4" class="fixed inset-0 z-50 bg-black flex flex-col justify-between hidden select-none">
+    <!-- 상단 툴바 (오버레이) -->
+    <div id="viewer-header" class="relative z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent transition duration-300">
+      <div class="space-y-0.5">
+        <h5 id="viewer-photo-title" class="text-sm font-bold text-white"></h5>
+        <p id="viewer-photo-index" class="text-[11px] text-stone-400"></p>
+      </div>
+      <button onclick="closeViewer()" class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition active:scale-95">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
     </div>
 
-    <div class="viewer-body">
-      <!-- 왼쪽 클릭: 이전 사진 -->
-      <div class="nav-zone left" onclick="prevPhoto()">
-        <span class="nav-arrow">&#10094;</span>
-      </div>
+    <!-- 중앙 인터랙티브 이미지 뷰어 영역 -->
+    <div class="relative flex-1 flex items-center justify-center overflow-hidden px-2" onclick="toggleViewerControls()">
+      <!-- 이전 버튼 -->
+      <button onclick="event.stopPropagation(); prevPhoto();" class="absolute left-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition active:scale-90">
+        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+      </button>
 
-      <img id="viewer-img" src="" alt="사진">
+      <img id="viewer-img" class="max-h-full max-w-full object-contain transition duration-200" alt="가족 사진">
 
-      <!-- 오른쪽 클릭: 다음 사진 (마지막 사진일 시 대문 복귀) -->
-      <div class="nav-zone right" onclick="nextPhoto()">
-        <span class="nav-arrow" id="next-arrow">&#10095;</span>
-      </div>
+      <!-- 다음 버튼 -->
+      <button onclick="event.stopPropagation(); nextPhoto();" class="absolute right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 transition active:scale-90">
+        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+      </button>
     </div>
 
-    <div class="viewer-footer" id="v-help">
-      화면 오른쪽을 누르면 다음 사진 · 마지막 사진에서 누르면 대문으로 돌아갑니다
+    <!-- 하단 필름 스트립 썸네일 바 -->
+    <div id="viewer-footer" class="relative z-10 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition duration-300">
+      <div id="viewer-filmstrip" class="flex gap-2 overflow-x-auto pb-1 slider-touch"></div>
     </div>
   </div>
 
-  <!-- data.js 연동 -->
-  <script src="data.js"></script>
-
   <script>
-    let currentYearIdx = 0;
-    let currentPhotos = [];
-    let currentPhotoIdx = 0;
-    let currentMonthTitle = "";
-
-    function init() {
-      if (typeof GALLERY_DATA === 'undefined' || !Array.isArray(GALLERY_DATA) || GALLERY_DATA.length === 0) {
-        document.getElementById('timeline-container').innerHTML =
-          '<p style="padding:20px; font-weight:bold; color:red;">data.js 파일을 불러올 수 없습니다.</p>';
-        return;
+    // ==========================================
+    // 아이패드 테스트용 구조화 데이터
+    // ==========================================
+    const archiveData = {
+      "2023": {
+        year: 2023,
+        cover: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800&q=80",
+        months: {
+          "8월": {
+            title: "2023년 8월 여름휴가",
+            desc: "푸른 바다와 함께한 한여름 가족 여행 기록",
+            photos: [
+              { url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80", title: "해변의 석양", ratio: "col-span-2 row-span-2" },
+              { url: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800&q=80", title: "가족 단체 사진", ratio: "col-span-1 row-span-1" },
+              { url: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80", title: "호숫가 산책", ratio: "col-span-1 row-span-2" },
+              { url: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&q=80", title: "숲속 나들이", ratio: "col-span-1 row-span-1" }
+            ]
+          },
+          "5월": {
+            title: "2023년 5월 봄날의 나들이",
+            desc: "따뜻한 햇살과 함께한 주말 피크닉",
+            photos: [
+              { url: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200&q=80", title: "피크닉 풍경", ratio: "col-span-2 row-span-2" },
+              { url: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800&q=80", title: "잔디밭에서의 미소", ratio: "col-span-1 row-span-1" }
+            ]
+          }
+        }
+      },
+      "2015": {
+        year: 2015,
+        cover: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=800&q=80",
+        months: {
+          "5월": {
+            title: "2015년 5월 캄보디아 앙코르와트",
+            desc: "웅장한 사원과 신비로운 일출을 배경으로 남긴 추억",
+            photos: [
+              { url: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=1200&q=80", title: "앙코르와트 일출", ratio: "col-span-2 row-span-2" },
+              { url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80", title: "사원 탐방길", ratio: "col-span-1 row-span-1" },
+              { url: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80", title: "호수 위의 시간", ratio: "col-span-1 row-span-2" },
+              { url: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=80", title: "신비로운 숲길", ratio: "col-span-1 row-span-1" }
+            ]
+          },
+          "3월": {
+            title: "2015년 3월 따뜻한 봄날",
+            desc: "김해 공원에서의 여유로운 오후 산책",
+            photos: [
+              { url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80", title: "봄 햇살", ratio: "col-span-2 row-span-2" },
+              { url: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&q=80", title: "꽃길 걷기", ratio: "col-span-1 row-span-1" }
+            ]
+          }
+        }
       }
-      renderYears();
-      selectYear(0);
-    }
+    };
 
-    // 1. 연도 바 렌더링
-    function renderYears() {
-      const yearBar = document.getElementById('year-bar');
-      yearBar.innerHTML = '';
-      GALLERY_DATA.forEach((item, idx) => {
-        const btn = document.createElement('button');
-        btn.className = 'year-btn' + (idx === 0 ? ' active' : '');
-        btn.innerText = item.year;
-        btn.onclick = () => selectYear(idx);
-        yearBar.appendChild(btn);
-      });
-    }
+    // 상태 관리 변수
+    let currentStep = 1;
+    let selectedYear = null;
+    let selectedMonth = null;
+    let currentPhotoList = [];
+    let currentPhotoIndex = 0;
+    let controlsVisible = true;
 
-    // 2. 연도 선택 및 콘텐츠 표시
-    function selectYear(idx) {
-      currentYearIdx = idx;
-      const buttons = document.querySelectorAll('.year-btn');
-      buttons.forEach((b, bIdx) => {
-        if (bIdx === idx) b.classList.add('active');
-        else b.classList.remove('active');
-      });
+    // 초기 실행
+    window.onload = () => {
+      renderStep1();
+      lucide.createIcons();
+    };
 
-      const container = document.getElementById('timeline-container');
-      container.innerHTML = '';
+    // [1단계] 연도별 렌더링
+    function renderStep1() {
+      currentStep = 1;
+      updateHeader("우리 가족 추억보관소", "함께 걸어온 소중한 시간과 이야기", false, "1단계: 연도별");
+      showSection("step-1");
 
-      const months = GALLERY_DATA[idx].months || [];
-      months.forEach((m, mIdx) => {
-        if (!m.photos || m.photos.length === 0) return;
+      const grid = document.getElementById("year-grid");
+      grid.innerHTML = "";
 
-        const coverPhoto = m.photos[0];
+      Object.keys(archiveData).forEach(year => {
+        const item = archiveData[year];
+        const card = document.createElement("div");
+        card.className = "group relative cursor-pointer overflow-hidden rounded-2xl bg-[#1e1e1e] border border-white/10 shadow-lg transition duration-300 hover:border-amber-500/50 active:scale-95";
+        card.onclick = () => selectYear(year);
 
-        const section = document.createElement('div');
-        section.className = 'month-section';
-
-        // PC 전용 좌측 폴더 카드
-        const leftWrap = document.createElement('div');
-        leftWrap.className = 'folder-cover-wrap';
-        leftWrap.innerHTML = `
-          <img class="folder-cover-img" src="${coverPhoto.url}" alt="${coverPhoto.name}" loading="lazy" onclick="openViewer(${mIdx}, 0)" style="cursor:pointer;">
-          <div class="folder-title">${m.month}의 추억 (폴더)</div>
-          <div class="folder-desc">${m.title || ''} · 총 ${m.photos.length}장의 사진</div>
+        card.innerHTML = `
+          <div class="aspect-[4/3] w-full overflow-hidden">
+            <img src="${item.cover}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+          </div>
+          <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-amber-400 font-bold uppercase tracking-wider">YEAR</span>
+              <h3 class="text-xl font-black text-white">${item.year}년</h3>
+            </div>
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm">
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </div>
+          </div>
         `;
+        grid.appendChild(card);
+      });
+      lucide.createIcons();
+    }
 
-        // 우측 사진 그리드 (모바일에서는 3열 세로 직사각형 카드로 자동 전환)
-        const rightWrap = document.createElement('div');
-        rightWrap.className = 'photo-grid-wrap';
+    // [2단계] 월별 모자이크 렌더링 (C안)
+    function selectYear(year) {
+      selectedYear = year;
+      currentStep = 2;
+      const yearObj = archiveData[year];
+      updateHeader(`${year}년 추억 폴더`, "월별 모자이크 타일을 선택하세요", true, "2단계: 월별 폴더");
+      document.getElementById("step2-year-title").innerText = `${year}년 월별 모아보기`;
+      showSection("step-2");
 
-        const gridHeader = document.createElement('div');
-        gridHeader.className = 'photo-grid-header';
-        gridHeader.innerText = `${m.month} (${m.photos.length}장)`;
+      const grid = document.getElementById("month-mosaic-grid");
+      grid.innerHTML = "";
 
-        const grid = document.createElement('div');
-        grid.className = 'photo-grid';
+      const months = Object.keys(yearObj.months);
+      months.forEach((mKey, idx) => {
+        const mData = yearObj.months[mKey];
+        const cover = mData.photos[0].url;
+        const card = document.createElement("div");
+        
+        // 모던 모자이크 효과: 첫 타일은 와이드하게 배치
+        const spanClass = (idx === 0) ? "col-span-2 row-span-2" : "col-span-1 row-span-1";
+        card.className = `relative cursor-pointer overflow-hidden rounded-2xl bg-[#1e1e1e] border border-white/10 shadow-md transition duration-300 hover:scale-[1.02] active:scale-95 ${spanClass}`;
+        card.onclick = () => selectMonth(mKey);
 
-        m.photos.forEach((p, pIdx) => {
-          const thumb = document.createElement('div');
-          thumb.className = 'thumb-item';
-          thumb.setAttribute('data-month', m.month); // 모바일 카드 상단에 표시될 라벨
-          thumb.innerHTML = `<img src="${p.url}" alt="${p.name}" loading="lazy">`;
-          thumb.onclick = () => openViewer(mIdx, pIdx);
-          grid.appendChild(thumb);
-        });
+        card.innerHTML = `
+          <img src="${cover}" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent"></div>
+          <div class="absolute bottom-3 left-3 right-3">
+            <span class="text-[10px] text-amber-400 font-bold">${year}년</span>
+            <h4 class="text-base md:text-lg font-black text-white">${mKey}</h4>
+            <p class="text-[11px] text-stone-300 truncate">${mData.title}</p>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+      lucide.createIcons();
+    }
 
-        rightWrap.appendChild(gridHeader);
-        rightWrap.appendChild(grid);
+    // [3단계] 시네마틱 히어로 + 사진 목록 렌더링
+    function selectMonth(mKey) {
+      selectedMonth = mKey;
+      currentStep = 3;
+      const monthData = archiveData[selectedYear].months[mKey];
+      currentPhotoList = monthData.photos;
 
-        section.appendChild(leftWrap);
-        section.appendChild(rightWrap);
-        container.appendChild(section);
+      updateHeader(`${selectedYear}년 ${mKey}`, monthData.title, true, "3단계: 사진 목록");
+      showSection("step-3");
+
+      // 최상단 히어로 배너 설정
+      const hero = currentPhotoList[0];
+      document.getElementById("hero-img").src = hero.url;
+      document.getElementById("hero-title").innerText = monthData.title;
+      document.getElementById("hero-desc").innerText = monthData.desc;
+      document.getElementById("photo-count-badge").innerText = `총 ${currentPhotoList.length}장`;
+
+      // 하단 모자이크 사진 그리드 구성
+      const grid = document.getElementById("photo-mosaic-grid");
+      grid.innerHTML = "";
+
+      currentPhotoList.forEach((photo, index) => {
+        const card = document.createElement("div");
+        card.className = `relative cursor-pointer overflow-hidden rounded-xl bg-stone-900 border border-white/10 shadow transition hover:opacity-90 active:scale-95 ${photo.ratio}`;
+        card.onclick = () => openViewer(index);
+
+        card.innerHTML = `
+          <img src="${photo.url}" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition"></div>
+          <div class="absolute bottom-2 left-2 right-2 text-[10px] text-white/90 truncate drop-shadow">
+            ${photo.title}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    // [4단계] 시네마틱 이머시브 뷰어 열기
+    function openHeroToViewer() {
+      openViewer(0);
+    }
+
+    function openViewer(index) {
+      currentPhotoIndex = index;
+      document.getElementById("step-4").classList.remove("hidden");
+      renderViewerPhoto();
+      renderFilmstrip();
+      lucide.createIcons();
+    }
+
+    function renderViewerPhoto() {
+      const p = currentPhotoList[currentPhotoIndex];
+      document.getElementById("viewer-img").src = p.url;
+      document.getElementById("viewer-photo-title").innerText = p.title;
+      document.getElementById("viewer-photo-index").innerText = `${currentPhotoIndex + 1} / ${currentPhotoList.length}`;
+      highlightFilmstrip();
+    }
+
+    function renderFilmstrip() {
+      const strip = document.getElementById("viewer-filmstrip");
+      strip.innerHTML = "";
+      currentPhotoList.forEach((p, idx) => {
+        const item = document.createElement("div");
+        item.id = `film-${idx}`;
+        item.className = "relative flex-shrink-0 cursor-pointer overflow-hidden rounded-lg w-16 h-12 border-2 border-transparent transition opacity-60 hover:opacity-100";
+        item.onclick = (e) => {
+          e.stopPropagation();
+          currentPhotoIndex = idx;
+          renderViewerPhoto();
+        };
+        item.innerHTML = `<img src="${p.url}" class="w-full h-full object-cover">`;
+        strip.appendChild(item);
+      });
+      highlightFilmstrip();
+    }
+
+    function highlightFilmstrip() {
+      currentPhotoList.forEach((_, idx) => {
+        const el = document.getElementById(`film-${idx}`);
+        if (el) {
+          if (idx === currentPhotoIndex) {
+            el.className = "relative flex-shrink-0 cursor-pointer overflow-hidden rounded-lg w-16 h-12 border-2 border-amber-500 opacity-100 scale-105 transition";
+            el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          } else {
+            el.className = "relative flex-shrink-0 cursor-pointer overflow-hidden rounded-lg w-16 h-12 border-2 border-transparent opacity-50 transition";
+          }
+        }
       });
     }
 
-    // 3. 전체화면 뷰어 로직
-    const modal = document.getElementById('viewer-modal');
-    const vImg = document.getElementById('viewer-img');
-    const vTitle = document.getElementById('v-title');
-    const vSub = document.getElementById('v-sub');
-    const nextArrow = document.getElementById('next-arrow');
-    const vHelp = document.getElementById('v-help');
-
-    function openViewer(monthIdx, photoIdx) {
-      const monthData = GALLERY_DATA[currentYearIdx].months[monthIdx];
-      currentPhotos = monthData.photos;
-      currentMonthTitle = monthData.title || (monthData.month + '의 추억');
-      currentPhotoIdx = photoIdx;
-
-      updateViewer();
-      modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
+    function nextPhoto() {
+      if (currentPhotoIndex < currentPhotoList.length - 1) {
+        currentPhotoIndex++;
+        renderViewerPhoto();
+      } else {
+        currentPhotoIndex = 0; // 루프
+        renderViewerPhoto();
+      }
     }
 
-    function updateViewer() {
-      const photo = currentPhotos[currentPhotoIdx];
-      vImg.src = photo.url;
-
-      vTitle.innerText = currentMonthTitle;
-      vSub.innerText = `${photo.name} [ ${currentPhotoIdx + 1} / ${currentPhotos.length} ]`;
-
-      const isLast = (currentPhotoIdx === currentPhotos.length - 1);
-      if (isLast) {
-        nextArrow.innerText = '⮌';
-        vHelp.innerText = '마지막 사진입니다. 화면 오른쪽을 한 번 더 누르면 대문으로 돌아갑니다.';
+    function prevPhoto() {
+      if (currentPhotoIndex > 0) {
+        currentPhotoIndex--;
+        renderViewerPhoto();
       } else {
-        nextArrow.innerText = '❯';
-        vHelp.innerText = '화면 오른쪽을 누르면 다음 사진 · 왼쪽은 이전 사진';
+        currentPhotoIndex = currentPhotoList.length - 1; // 루프
+        renderViewerPhoto();
       }
     }
 
     function closeViewer() {
-      modal.classList.remove('active');
-      vImg.src = '';
-      document.body.style.overflow = '';
+      document.getElementById("step-4").classList.add("hidden");
     }
 
-    function nextPhoto() {
-      if (!currentPhotos.length) return;
-      if (currentPhotoIdx >= currentPhotos.length - 1) {
-        closeViewer();
-        return;
-      }
-      currentPhotoIdx++;
-      updateViewer();
-    }
-
-    function prevPhoto() {
-      if (!currentPhotos.length) return;
-      if (currentPhotoIdx > 0) {
-        currentPhotoIdx--;
-        updateViewer();
+    function toggleViewerControls() {
+      controlsVisible = !controlsVisible;
+      const h = document.getElementById("viewer-header");
+      const f = document.getElementById("viewer-footer");
+      if (controlsVisible) {
+        h.classList.remove("-translate-y-full", "opacity-0");
+        f.classList.remove("translate-y-full", "opacity-0");
+      } else {
+        h.classList.add("-translate-y-full", "opacity-0");
+        f.classList.add("translate-y-full", "opacity-0");
       }
     }
 
-    // 키보드 조작 지원
-    window.addEventListener('keydown', (e) => {
-      if (!modal.classList.contains('active')) return;
-      if (e.key === 'ArrowRight') nextPhoto();
-      if (e.key === 'ArrowLeft') prevPhoto();
-      if (e.key === 'Escape') closeViewer();
+    // 뒤로가기 내비게이션
+    function navigateBack() {
+      if (currentStep === 3) {
+        selectYear(selectedYear);
+      } else if (currentStep === 2) {
+        renderStep1();
+      }
+    }
+
+    // 공통 뷰 제어 함수
+    function showSection(id) {
+      document.getElementById("step-1").classList.add("hidden");
+      document.getElementById("step-2").classList.add("hidden");
+      document.getElementById("step-3").classList.add("hidden");
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    function updateHeader(title, subtitle, showBack, stepLabel) {
+      document.getElementById("header-title").innerText = title;
+      document.getElementById("header-subtitle").innerText = subtitle;
+      document.getElementById("current-step-label").innerText = stepLabel;
+      const backBtn = document.getElementById("btn-back");
+      if (showBack) backBtn.classList.remove("hidden");
+      else backBtn.classList.add("hidden");
+    }
+
+    // 아이패드 스와이프(제스처) 지원
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const vArea = document.getElementById("step-4");
+    vArea.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+    vArea.addEventListener('touchend', e => {
+      touchEndX = e.changedTouches[0].screenX;
+      if (touchStartX - touchEndX > 50) nextPhoto();
+      if (touchEndX - touchStartX > 50) prevPhoto();
     });
-
-    window.onload = init;
   </script>
 </body>
 </html>
